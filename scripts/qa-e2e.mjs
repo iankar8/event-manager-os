@@ -320,6 +320,11 @@ try {
   await submissionPage.getByLabel(/Speaker bio/).fill("Platform engineer who has run program operations for three community conferences.");
   await submissionPage.getByLabel(/Key takeaway/).fill("Treat handoffs as testable data contracts.");
   await submissionPage.getByLabel(/Target audience outcome/).fill("Attendees can audit every program transition.");
+  // A speaker must be able to name their own co-presenter; the association could
+  // previously only originate from seed data or the organizer side.
+  await submissionPage.getByRole("button", { name: "Add a co-presenter", exact: true }).click();
+  await submissionPage.getByRole("group", { name: "Co-presenters" }).getByLabel("Name").fill("Dana Whitlock");
+  await submissionPage.getByRole("group", { name: "Co-presenters" }).getByLabel("Email").fill("dana.whitlock@example.com");
   await submissionPage.getByRole("button", { name: "Submit proposal", exact: true }).click();
   await submissionPage.getByText("Proposal submitted. A confirmation email has been logged.", { exact: true }).waitFor();
   await submissionPage.close();
@@ -329,6 +334,18 @@ try {
   const bioReadback = await page.evaluate(async () => (await fetch("/api/speakers")).json());
   assert.match(String(bioReadback.speakers[0].bio), /SBEK-PORTAL-BIO-01/,
     "A new submission must not overwrite a speaker's existing profile bio");
+
+  const coSpeakerReadback = await page.evaluate(async () => {
+    const list = await (await fetch("/api/proposals")).json();
+    const created = list.proposals.find((item) => item.title === "Boundary-Safe Program Operations");
+    return created ? (await (await fetch(`/api/proposals/${created.id}`)).json()) : null;
+  });
+  assert.ok(coSpeakerReadback, "The submitted proposal should be readable back");
+  const names = coSpeakerReadback.participants.map((person) => person.name);
+  assert.equal(names.includes("Dana Whitlock"), true,
+    `A speaker-named co-presenter must reach the proposal record, got: ${JSON.stringify(names)}`);
+  assert.equal(coSpeakerReadback.participants.filter((person) => person.is_primary).length, 1,
+    "Adding a co-presenter must not disturb the primary speaker");
   const slideTask = speakerReadback.tasks.find((task) => task.title === "Upload final slides" && String(task.session_title).startsWith("Your AI Pair Programmer"));
   assert.ok(slideTask, "Speaker should have a session-scoped slide request");
   for (const version of [1, 2]) {
@@ -419,7 +436,11 @@ try {
   await mobilePage.getByRole("navigation", { name: "organizer navigation" }).waitFor({ state: "visible" });
   await mobileContext.close();
 
-  const unexpectedErrors = browserErrors.filter((message) => !/status of (?:400|403|404|409)\b/.test(message));
+  // Third-party embeds probe for features our iframe deliberately withholds, and the
+  // browser reports the refusal on the console. That message is the sandbox working,
+  // not a defect, and widening `allow` to silence it would be the wrong trade.
+  const unexpectedErrors = browserErrors.filter((message) => !/status of (?:400|403|404|409)\b/.test(message)
+    && !/Permissions policy violation/.test(message));
   assert.deepEqual(unexpectedErrors, [], `Browser console errors: ${unexpectedErrors.join(" | ")}`);
   console.log("Program Desk E2E: role scoping, speaker resources, API contract, safe Accelevents round trip, acceptance handoff, public surfaces, and mobile navigation passed.");
 } finally {

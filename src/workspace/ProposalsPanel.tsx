@@ -3,6 +3,7 @@ import { ArrowDownUp, ArrowRight, Download, ExternalLink, Search, Share2, Sparkl
 
 import { apiRequest } from "../lib/api";
 import { useResource } from "../lib/useResource";
+import { CoSpeakerFields, completedCoSpeakers, type CoSpeakerEntry } from "../screens/PublicEvent";
 import { EmptyBlock, ErrorBlock, LoadingBlock, Notice, Row, StatusChip } from "./shared";
 
 type ProposalList = { proposals: Row[] };
@@ -126,12 +127,15 @@ function ProposalEditForm({ detail, onSaved }: { detail: ProposalDetail; onSaved
   const [title, setTitle] = useState(String(proposal.title));
   const [abstract, setAbstract] = useState(String(proposal.abstract));
   const [keyTakeaway, setKeyTakeaway] = useState(String(proposal.key_takeaway ?? ""));
+  const [coSpeakers, setCoSpeakers] = useState<CoSpeakerEntry[]>(() => detail.participants
+    .filter((person) => !person.is_primary)
+    .map((person) => ({ name: String(person.name ?? ""), email: String(person.email ?? "") })));
   const [pending, setPending] = useState(false);
   async function submit(event: FormEvent) {
     event.preventDefault(); setPending(true);
     try {
       const result = await apiRequest<{ message: string }>(`/api/proposals/${proposal.id}`, {
-        method: "PATCH", body: JSON.stringify({ title, abstract, keyTakeaway }),
+        method: "PATCH", body: JSON.stringify({ title, abstract, keyTakeaway, coSpeakers: completedCoSpeakers(coSpeakers) }),
       });
       onSaved(result.message);
     } finally { setPending(false); }
@@ -140,5 +144,6 @@ function ProposalEditForm({ detail, onSaved }: { detail: ProposalDetail; onSaved
     <label>Session title<input required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
     <label>Abstract<textarea required rows={9} value={abstract} onChange={(event) => setAbstract(event.target.value)} /></label>
     <label>Key takeaway<input required value={keyTakeaway} onChange={(event) => setKeyTakeaway(event.target.value)} /></label>
+    <CoSpeakerFields value={coSpeakers} onChange={setCoSpeakers} />
     <button className="button button-accent" disabled={pending}>{pending ? "Saving…" : "Save changes"}</button></form>;
 }

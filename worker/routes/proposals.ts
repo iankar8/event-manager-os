@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { canReadProposal, isOrganizer, requireSession } from "../lib/access";
 import { createId, createToken, hashToken } from "../lib/crypto";
+import { attachCoSpeakers, clearCoSpeakers, coSpeakerInput } from "../services/participants";
 import type { AppEnv } from "../types";
 
 const proposals = new Hono<AppEnv>();
@@ -16,6 +17,7 @@ const proposalInput = z.object({
   notesForReviewers: z.string().optional(),
   keyTakeaway: z.string().optional(),
   workshopPrerequisites: z.string().optional(),
+  coSpeakers: coSpeakerInput.optional(),
   status: z.enum(["draft", "submitted"]).default("draft"),
 });
 const decisionInput = z.object({
@@ -115,7 +117,7 @@ proposals.get("/:proposalId", async (context) => {
        WHERE proposals.id = ? AND proposals.event_id = ?`,
     ).bind(proposalId, session.eventId).first(),
     context.env.DB.prepare(
-      `SELECT users.id, users.name, users.title, users.company, proposal_participants.role_label,
+      `SELECT users.id, users.name, users.email, users.title, users.company, proposal_participants.role_label,
               proposal_participants.is_primary
        FROM proposal_participants JOIN users ON users.id = proposal_participants.user_id
        WHERE proposal_participants.proposal_id = ? ORDER BY proposal_participants.sort_order`,
@@ -177,6 +179,9 @@ proposals.post("/", async (context) => {
     context.env.DB.prepare(
       "INSERT INTO proposal_participants (proposal_id, user_id, role_label, is_primary, sort_order) VALUES (?, ?, 'Primary speaker', 1, 1)",
     ).bind(proposalId, session.userId),
+    ...await attachCoSpeakers(context.env.DB, {
+      eventId: session.eventId, proposalId, submitterId: session.userId, coSpeakers: parsed.data.coSpeakers ?? [],
+    }),
   ]);
   return context.json({ ok: true, proposalId, message: parsed.data.status === "draft" ? "Draft saved." : "Proposal submitted. A confirmation email has been queued." }, 201);
 });
@@ -205,11 +210,22 @@ proposals.patch("/:proposalId", async (context) => {
     key_takeaway: parsed.data.keyTakeaway ?? current?.key_takeaway,
     workshop_prerequisites: parsed.data.workshopPrerequisites ?? current?.workshop_prerequisites,
   };
-  await context.env.DB.prepare(
+  const statements = [context.env.DB.prepare(
     `UPDATE proposals SET title = ?, abstract = ?, track_id = ?, format_id = ?, audience_level = ?,
       notes_for_reviewers = ?, key_takeaway = ?, workshop_prerequisites = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
   ).bind(value.title, value.abstract, value.track_id, value.format_id, value.audience_level,
-    value.notes_for_reviewers, value.key_takeaway, value.workshop_prerequisites, proposalId).run();
+    value.notes_for_reviewers, value.key_takeaway, value.workshop_prerequisites, proposalId)];
+
+  // Only rewrite the co-presenters when the caller actually sent the field, so an
+  // edit that touches the abstract alone cannot silently drop them.
+  if (parsed.data.coSpeakers) {
+    const submitterId = String(current?.submitter_id ?? session.userId);
+    statements.push(clearCoSpeakers(context.env.DB, proposalId));
+    statements.push(...await attachCoSpeakers(context.env.DB, {
+      eventId: session.eventId, proposalId, submitterId, coSpeakers: parsed.data.coSpeakers,
+    }));
+  }
+  await context.env.DB.batch(statements);
   return context.json({ ok: true, message: "Proposal changes saved." });
 });
 

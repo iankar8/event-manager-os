@@ -42,6 +42,7 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
   const [abstract, setAbstract] = useState(""); const [trackId, setTrackId] = useState(""); const [formatId, setFormatId] = useState("");
   const [audience, setAudience] = useState(""); const [keyTakeaway, setKey] = useState(""); const [prerequisites, setPrerequisites] = useState("");
   const [speakerBio, setSpeakerBio] = useState(""); const [notesForReviewers, setNotes] = useState("");
+  const [coSpeakers, setCoSpeakers] = useState<CoSpeakerEntry[]>([]);
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [message, setMessage] = useState<string | null>(null); const [showSignup, setShowSignup] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,7 +64,7 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
     setSubmitting(true);
     try { const result = await apiRequest<{ message: string }>(`/api/public/${slug}/proposals`, { method: "POST",
       body: JSON.stringify({ title, abstract, trackId: trackId || null, formatId: formatId || null, audienceLevel: audience,
-        notesForReviewers, speakerBio, keyTakeaway,
+        notesForReviewers, speakerBio, keyTakeaway, coSpeakers: completedCoSpeakers(coSpeakers),
         workshopPrerequisites: prerequisites, answers, status }) }); setMessage(result.message); }
     catch (reason) { setMessage(reason instanceof Error ? reason.message : "Submission failed."); }
     finally { setSubmitting(false); }
@@ -80,6 +81,7 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
         <label>Audience level <em>Required</em><select required value={audience} onChange={(event) => setAudience(event.target.value)}><option value="">Choose an audience level…</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></label>
         <label>Speaker bio <em>Required</em><textarea required rows={4} value={speakerBio} onChange={(event) => setSpeakerBio(event.target.value)} placeholder="The background that makes you the right person to give this talk." /></label>
         <label>Notes for reviewers<textarea rows={3} value={notesForReviewers} onChange={(event) => setNotes(event.target.value)} placeholder="Anything the committee should know that does not belong in the public abstract." /></label>
+        <CoSpeakerFields value={coSpeakers} onChange={setCoSpeakers} />
         <label>Key takeaway <em>Required</em><input required value={keyTakeaway} onChange={(event) => setKey(event.target.value)} placeholder="A decision framework attendees can apply immediately" /></label>
         {selectedFormat === "Workshop (120 min)" ? <label className="conditional-field">Workshop prerequisites <span>Shown because Workshop is selected</span><textarea rows={4} value={prerequisites} onChange={(event) => setPrerequisites(event.target.value)} /></label> : null}
         {customFields.map((field) => <label className={field.condition_field_key ? "conditional-field" : undefined} key={field.id}>{field.label} {field.required ? <em>Required</em> : null}{field.help_text ? <span>{field.help_text}</span> : null}
@@ -94,6 +96,36 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
         {showSignup ? <SignupForm slug={slug} onCreated={(text) => { setMessage(text); setShowSignup(false); }} /> : null}<hr /><h3>Configured options</h3><dl><div><dt>Tracks</dt><dd>{data.tracks.map((item) => item.name).join(" · ")}</dd></div><div><dt>Formats</dt><dd>{data.formats.map((item) => item.name).join(" · ")}</dd></div></dl></aside>
     </div>}
   </div>;
+}
+
+export type CoSpeakerEntry = { name: string; email: string };
+
+/**
+ * Co-presenter rows. A talk often has more than one presenter, and the speaker who
+ * submits it is the one who knows who they are — this is shared by the public form
+ * and the logged-in edit panel so both offer the same control.
+ */
+export function CoSpeakerFields({ value, onChange }: { value: CoSpeakerEntry[]; onChange: (next: CoSpeakerEntry[]) => void }) {
+  function update(index: number, patch: Partial<CoSpeakerEntry>) {
+    onChange(value.map((entry, position) => (position === index ? { ...entry, ...patch } : entry)));
+  }
+  return <fieldset className="co-speaker-fields">
+    <legend>Co-presenters</legend>
+    <p className="field-help">Anyone presenting this session with you. They are added to the program and can be invited to their own portal; leave empty if you are presenting alone.</p>
+    {value.map((entry, index) => <div className="co-speaker-row" key={index}>
+      <label>Name<input value={entry.name} onChange={(event) => update(index, { name: event.target.value })} /></label>
+      <label>Email<input type="email" value={entry.email} onChange={(event) => update(index, { email: event.target.value })} /></label>
+      <button type="button" className="button button-quiet button-small"
+        onClick={() => onChange(value.filter((_, position) => position !== index))}>Remove</button>
+    </div>)}
+    <button type="button" className="button button-quiet button-small"
+      onClick={() => onChange([...value, { name: "", email: "" }])}>Add a co-presenter</button>
+  </fieldset>;
+}
+
+/** Rows the speaker actually filled in; blank rows are ignored rather than rejected. */
+export function completedCoSpeakers(entries: CoSpeakerEntry[]) {
+  return entries.filter((entry) => entry.name.trim() && entry.email.trim());
 }
 
 function SignupForm({ slug, onCreated }: { slug: string; onCreated: (message: string) => void }) {

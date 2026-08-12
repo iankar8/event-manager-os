@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { createId, hashPassword, hashToken } from "../lib/crypto";
 import { createSession, deleteSession, getSession } from "../lib/session";
+import { attachCoSpeakers, coSpeakerInput } from "../services/participants";
 import type { AppEnv } from "../types";
 
 const publicRoutes = new Hono<AppEnv>();
@@ -97,7 +98,7 @@ publicRoutes.post("/:slug/proposals", async (context) => {
   const parsed = z.object({ title: z.string().min(3), abstract: z.string().default(""), trackId: z.string().nullable().optional(),
     formatId: z.string().nullable().optional(), audienceLevel: z.string().optional(), notesForReviewers: z.string().optional(),
     keyTakeaway: z.string().optional(), workshopPrerequisites: z.string().optional(), speakerBio: z.string().optional(),
-    status: z.enum(["draft", "submitted"]),
+    coSpeakers: coSpeakerInput, status: z.enum(["draft", "submitted"]),
     answers: z.record(z.string(), z.union([z.string(), z.number(), z.array(z.string())])).default({}) })
     .safeParse(await context.req.json().catch(() => null));
   if (!parsed.success) return context.json({ error: "Add a proposal title." }, 400);
@@ -150,6 +151,9 @@ publicRoutes.post("/:slug/proposals", async (context) => {
       "UPDATE users SET bio = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND (bio IS NULL OR TRIM(bio) = '')",
     ).bind(parsed.data.speakerBio.trim(), session.userId));
   }
+  statements.push(...await attachCoSpeakers(context.env.DB, {
+    eventId: String(event.id), proposalId, submitterId: session.userId, coSpeakers: parsed.data.coSpeakers,
+  }));
   for (const field of customFields) {
     const value = parsed.data.answers[String(field.id)];
     if (value === undefined || value === "") continue;

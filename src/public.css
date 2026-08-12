@@ -115,3 +115,11 @@
   .itinerary-list > article { grid-template-columns: 1fr; gap: var(--space-sm); }
   .star-button { width: max-content; }
 }
+
+/* Co-presenter rows, shared by the public submission form and the edit panel. */
+.co-speaker-fields { display: grid; gap: var(--space-sm); padding: var(--space-md); border: 1px solid var(--color-rule); border-radius: var(--radius-sm); }
+.co-speaker-fields legend { padding: 0 var(--space-xs); font-weight: 600; font-size: var(--text-sm); }
+.co-speaker-fields .field-help { margin: 0; color: var(--color-muted); font-size: var(--text-xs); line-height: 1.5; }
+.co-speaker-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--space-sm); align-items: end; }
+.co-speaker-row label { display: grid; gap: var(--space-2xs); font-weight: 600; font-size: var(--text-xs); }
+@media (max-width: 40rem) { .co-speaker-row { grid-template-columns: minmax(0, 1fr); align-items: stretch; } }
