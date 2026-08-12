@@ -1,7 +1,7 @@
 # Program Desk Product Specification
 
 **Date:** August 11, 2026
-**Status:** Implemented and locally verified; external deployment and competition submission remain approval-gated
+**Status:** Implemented, deployed, and verified against the production URL; competition form submission remains owner-controlled
 **Primary objective:** Ship the smallest complete, persisted event-program workflow that is easy for a competition judge to exercise and credible for a real conference team.
 
 ## Decision Receipt

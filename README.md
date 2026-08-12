@@ -8,6 +8,10 @@ It is a competition-ready alternative to the speaker and content workflow in Ses
 
 ![Program Desk organizer workspace](docs/qa/2026-08-11-workbench-desktop-real.png)
 
+**Live evaluator build:** [program-desk.ian-208.workers.dev](https://program-desk.ian-208.workers.dev)
+
+**Judge walkthrough:** [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md)
+
 ## What works
 
 - Custom CFP builder with required fields, dropdowns, conditional visibility, public draft/submission flow, deadlines, custom-answer round-tripping, confirmations, and editing locks.
@@ -117,7 +121,7 @@ docs/qa/             browser QA evidence
 
 ## Cloudflare setup
 
-The checked-in `wrangler.jsonc` uses a placeholder D1 database ID. For a real deployment, create a D1 database, replace the ID, apply remote migrations, and set production variables. Deployment is deliberately not performed as part of local development or evaluation.
+The checked-in `wrangler.jsonc` points to the competition deployment's D1 database. For a separate fork, create a new D1 database, replace that ID, apply the remote migrations, and set production variables before deploying.
 
 ```bash
 pnpm wrangler d1 create program-desk

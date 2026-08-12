@@ -11,12 +11,12 @@
     {
       "binding": "DB",
       "database_name": "program-desk",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "346e87d2-8300-44c2-95e9-adb4f6706404",
       "migrations_dir": "migrations"
     }
   ],
   "vars": {
-    "APP_ENV": "development",
+    "APP_ENV": "production",
     "EMAIL_MODE": "outbox",
     "ACCELEVENTS_SYNC_MODE": "outbox"
   },

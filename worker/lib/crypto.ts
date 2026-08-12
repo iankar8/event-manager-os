@@ -1,4 +1,5 @@
 const encoder = new TextEncoder();
+export const PASSWORD_HASH_ITERATIONS = 100_000;
 
 function bytesToBase64Url(bytes: Uint8Array) {
   let binary = "";
@@ -29,12 +30,12 @@ export async function hashPassword(password: string) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const material = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const derived = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 120_000 },
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: PASSWORD_HASH_ITERATIONS },
     material,
     256,
   );
 
-  return `pbkdf2$120000$${bytesToBase64Url(salt)}$${bytesToBase64Url(new Uint8Array(derived))}`;
+  return `pbkdf2$${PASSWORD_HASH_ITERATIONS}$${bytesToBase64Url(salt)}$${bytesToBase64Url(new Uint8Array(derived))}`;
 }
 
 export async function verifyPassword(password: string, stored: string) {
