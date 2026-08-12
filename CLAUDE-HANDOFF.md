@@ -157,10 +157,10 @@ pnpm db:migrate
 pnpm dev
 pnpm check
 pnpm test:e2e
-pnpm deploy
+pnpm run deploy
 ```
 
-Do not run `pnpm deploy` without Ian's explicit deploy authorization.
+Do not run `pnpm run deploy` without Ian's explicit deploy authorization. Note `pnpm deploy` (without `run`) resolves to pnpm's own built-in deploy command and fails; the migration must also be applied with `--remote` before deploying, or production keeps serving the previous canonical fixture.
 
 ## 5. Repository and verification state at handoff
 

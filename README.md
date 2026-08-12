@@ -12,6 +12,24 @@ It is a competition-ready alternative to the speaker and content workflow in Ses
 
 **Judge walkthrough:** [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md)
 
+### Verify the claim in 30 seconds
+
+1. Open the [live build](https://program-desk.ian-208.workers.dev) and choose **Explore demo** — you land as Organizer in an isolated, fully seeded event.
+2. On the Overview, click any step of the record trace.
+3. Each step shows who acted, when, the rule the server enforced, and **the database row id backing it** — then links to the surface holding that record.
+
+Nothing on that panel is asserted by the interface. It is read back from persisted rows through an organizer-scoped, event-scoped endpoint, and a stage with no evidence reports itself unrecorded rather than filling itself in.
+
+Sign in as a specific persona instead (password login, no inbox required):
+
+| Persona | Email | Password |
+|---|---|---|
+| Organizer | `sbek-organizer@example.com` | `SbekTest!2027-org` |
+| Reviewer | `sbek-reviewer@example.com` | `SbekTest!2027-rev` |
+| Speaker | `sbek-speaker@example.com` | `SbekTest!2027-spk` |
+
+**What this build does not claim:** application email is written to an outbox and never delivered externally, and the Accelevents integration applies against a deterministic local mirror rather than a live account. Both report their delivery mode explicitly.
+
 ## What works
 
 - A lifecycle trace on the organizer Overview that follows one proposal from submission to published program. Every step cites the actor, the timestamp, the enforced rule, and the database row id behind the claim, and links to the surface holding that record. It is derived from persisted rows through an organizer-only, event-scoped endpoint; stages without evidence report themselves as unrecorded rather than filling in.
@@ -127,7 +145,7 @@ The checked-in `wrangler.jsonc` points to the competition deployment's D1 databa
 ```bash
 pnpm wrangler d1 create program-desk
 pnpm wrangler d1 migrations apply program-desk --remote
-pnpm deploy
+pnpm run deploy
 ```
 
 Review production email delivery, secrets, retention, and access policies before deploying. The current build is safe for local evaluation because outbound communications remain in the application outbox.
