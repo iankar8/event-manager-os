@@ -1,0 +1,1115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Program Desk — Workbench direction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&amp;display=swap" rel="stylesheet">
+  <style>
+    /* Hallmark · macrostructure: Workbench · genre: modern-minimal · theme: Quiet
+     * audience: event-program operators · use: multi-role speaker workflow · tone: utilitarian
+     * nav: edge-aligned product bar · footer: Ft2 inline-rule · enrichment: product workbench
+     * accessibility: contrast + focus source-verified · responsive: source-verified, visual review pending
+     */
+    /* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4 */
+    :root {
+      --color-paper: oklch(98% 0.006 155);
+      --color-paper-2: oklch(96% 0.008 155);
+      --color-paper-3: oklch(93% 0.010 155);
+      --color-surface: oklch(99% 0.004 155);
+      --color-surface-raised: oklch(100% 0.003 155);
+      --color-rule: oklch(88% 0.012 155);
+      --color-rule-strong: oklch(74% 0.016 155);
+      --color-muted: oklch(42% 0.018 190);
+      --color-neutral: oklch(31% 0.022 210);
+      --color-ink-soft: oklch(25% 0.030 220);
+      --color-ink: oklch(17% 0.034 230);
+      --color-accent-soft: oklch(92% 0.045 155);
+      --color-accent: oklch(48% 0.120 157);
+      --color-accent-ink: oklch(98% 0.006 155);
+      --color-focus: oklch(52% 0.150 250);
+      --color-warning-soft: oklch(94% 0.052 82);
+      --color-warning: oklch(45% 0.105 72);
+      --color-danger-soft: oklch(95% 0.038 25);
+      --color-danger: oklch(47% 0.140 25);
+      --color-shadow: oklch(17% 0.034 230 / 0.10);
+
+      --font-display: "General Sans", "Geist", ui-sans-serif, system-ui, sans-serif;
+      --font-body: "General Sans", "Geist", ui-sans-serif, system-ui, sans-serif;
+      --font-wordmark: "Fraunces", ui-serif, Georgia, serif;
+      --font-mono: "Geist Mono", ui-monospace, monospace;
+
+      --space-3xs: 0.125rem;
+      --space-2xs: 0.25rem;
+      --space-xs: 0.5rem;
+      --space-sm: 0.75rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+      --space-3xl: 6rem;
+
+      --text-xs: 0.6875rem;
+      --text-sm: 0.8125rem;
+      --text-base: 1rem;
+      --text-md: 1.125rem;
+      --text-lg: 1.375rem;
+      --text-xl: 1.75rem;
+      --text-2xl: clamp(2rem, 3vw, 2.75rem);
+
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 100ms;
+      --dur-short: 180ms;
+      --dur-long: 280ms;
+
+      --rule-hair: 1px;
+      --rule-strong: 2px;
+      --radius-xs: 0.375rem;
+      --radius-sm: 0.625rem;
+      --radius-md: 0.875rem;
+      --radius-pill: 999px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-width: 0; overflow-x: clip; }
+    html { background: var(--color-paper); color-scheme: light; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background: var(--color-paper);
+      color: var(--color-ink);
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      text-rendering: optimizeLegibility;
+    }
+    button, input, select, textarea { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button { color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    p, h1, h2, h3 { margin: 0; }
+    h1, h2, h3 { overflow-wrap: anywhere; min-width: 0; }
+    .tnum { font-variant-numeric: tabular-nums; }
+    .skip-link {
+      position: fixed;
+      inset: var(--space-sm) auto auto var(--space-sm);
+      z-index: 20;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-ink);
+      color: var(--color-paper);
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    :focus-visible {
+      outline: var(--rule-strong) solid var(--color-focus);
+      outline-offset: var(--rule-hair);
+    }
+    .button,
+    .role-switch button,
+    .side-nav button,
+    .mobile-nav button,
+    .icon-button {
+      min-height: 2.75rem;
+      white-space: nowrap;
+      cursor: pointer;
+      border: var(--rule-hair) solid transparent;
+      transition:
+        background-color var(--dur-short) var(--ease-out),
+        color var(--dur-short) var(--ease-out),
+        border-color var(--dur-short) var(--ease-out),
+        transform var(--dur-micro) var(--ease-out);
+    }
+    .button:active,
+    .role-switch button:active,
+    .side-nav button:active,
+    .mobile-nav button:active,
+    .icon-button:active { transform: translateY(1px); }
+    .button:disabled,
+    .role-switch button:disabled,
+    .side-nav button:disabled,
+    .mobile-nav button:disabled,
+    .icon-button:disabled { cursor: not-allowed; opacity: 0.5; }
+    .button[aria-busy="true"] { cursor: progress; }
+    .button.is-success { border-color: var(--color-accent); color: var(--color-accent); }
+    .button.is-error { border-color: var(--color-danger); color: var(--color-danger); }
+
+    .sample-note {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 2rem;
+      padding-inline: var(--space-md);
+      background: var(--color-ink);
+      color: var(--color-paper);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.025em;
+      text-align: center;
+    }
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-sm);
+      align-items: center;
+      padding: var(--space-md);
+      background: var(--color-surface-raised);
+      border-block-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .brand-cluster,
+    .event-cluster,
+    .top-actions,
+    .role-switch,
+    .identity,
+    .section-heading,
+    .panel-actions,
+    .person-cell,
+    .task-line,
+    .flow-step,
+    .footer-line {
+      display: flex;
+      align-items: center;
+    }
+    .brand-cluster { gap: var(--space-lg); min-width: 0; }
+    .wordmark {
+      font-family: var(--font-wordmark);
+      font-size: var(--text-lg);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      white-space: nowrap;
+    }
+    .event-cluster {
+      gap: var(--space-sm);
+      min-width: 0;
+      color: var(--color-neutral);
+      font-size: var(--text-sm);
+    }
+    .event-cluster::before {
+      content: "";
+      width: var(--rule-hair);
+      height: 1.25rem;
+      background: var(--color-rule-strong);
+    }
+    .event-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .role-switch {
+      width: max-content;
+      max-width: 100%;
+      gap: var(--space-2xs);
+      padding: var(--space-2xs);
+      background: var(--color-paper-2);
+      border: var(--rule-hair) solid var(--color-rule);
+      border-radius: var(--radius-pill);
+      overflow-x: auto;
+    }
+    .role-switch button {
+      min-height: 2.25rem;
+      padding-inline: var(--space-md);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-size: var(--text-sm);
+    }
+    .role-switch button[aria-selected="true"] {
+      background: var(--color-surface-raised);
+      border-color: var(--color-rule);
+      box-shadow: 0 1px 2px var(--color-shadow);
+    }
+    .top-actions { justify-content: flex-start; gap: var(--space-sm); }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-xs);
+      padding-inline: var(--space-md);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      font-weight: 600;
+      font-size: var(--text-sm);
+    }
+    .button--primary {
+      background: var(--color-ink);
+      color: var(--color-paper);
+      border-color: var(--color-ink);
+    }
+    .button--quiet {
+      background: var(--color-surface-raised);
+      color: var(--color-ink);
+      border-color: var(--color-rule-strong);
+    }
+    .button--text { border-color: transparent; color: var(--color-neutral); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      min-height: calc(100dvh - 4rem);
+    }
+    .sidebar {
+      display: none;
+      padding: var(--space-lg) var(--space-md);
+      background: var(--color-paper-2);
+      border-inline-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .side-label,
+    .field-label,
+    .metric-label,
+    .meta,
+    .eyebrow-once {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: 0.045em;
+      color: var(--color-muted);
+    }
+    .side-label { margin: 0 var(--space-sm) var(--space-sm); }
+    .side-nav { display: grid; gap: var(--space-2xs); }
+    .side-nav button {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding-inline: var(--space-sm);
+      background: transparent;
+      border-radius: var(--radius-sm);
+      text-align: start;
+      font-size: var(--text-sm);
+    }
+    .side-nav button[aria-current="page"] {
+      background: var(--color-surface-raised);
+      border-color: var(--color-rule);
+      font-weight: 600;
+    }
+    .side-nav .nav-count {
+      margin-inline-start: auto;
+      min-width: 1.5rem;
+      padding-inline: var(--space-xs);
+      border-radius: var(--radius-pill);
+      background: var(--color-paper-3);
+      color: var(--color-neutral);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      line-height: 1.5rem;
+      text-align: center;
+    }
+    .sidebar-note {
+      margin-block-start: auto;
+      padding: var(--space-md) var(--space-sm) 0;
+      border-block-start: var(--rule-hair) solid var(--color-rule);
+      color: var(--color-muted);
+      font-size: var(--text-sm);
+    }
+    .mobile-nav {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-2xs);
+      padding: var(--space-xs);
+      background: var(--color-paper-2);
+      border-block-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .mobile-nav button {
+      min-width: 0;
+      padding-inline: var(--space-xs);
+      background: transparent;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mobile-nav button[aria-current="page"] {
+      background: var(--color-surface-raised);
+      border-color: var(--color-rule);
+      font-weight: 600;
+    }
+
+    main { min-width: 0; }
+    .role-panel { display: none; }
+    .role-panel.is-active { display: block; }
+    .main-inner {
+      width: min(100%, 92rem);
+      margin-inline: auto;
+      padding: var(--space-lg) var(--space-md) var(--space-xl);
+    }
+    .page-heading {
+      display: grid;
+      gap: var(--space-md);
+      margin-block-end: var(--space-lg);
+    }
+    .page-heading h1 {
+      max-width: 22ch;
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+    }
+    .page-heading p { max-width: 62ch; color: var(--color-neutral); }
+    .page-heading__actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+
+    .status-spine {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-block: var(--rule-hair) solid var(--color-rule);
+      margin-block-end: var(--space-lg);
+    }
+    .metric {
+      min-width: 0;
+      padding: var(--space-md) var(--space-sm);
+      border-inline-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .metric:nth-child(2n) { border-inline-end: 0; }
+    .metric:nth-child(-n+2) { border-block-end: var(--rule-hair) solid var(--color-rule); }
+    .metric-value {
+      display: block;
+      margin-block-start: var(--space-xs);
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .metric-note { display: block; margin-block-start: var(--space-xs); color: var(--color-muted); font-size: var(--text-sm); }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+    .panel {
+      min-width: 0;
+      background: var(--color-surface);
+      border: var(--rule-hair) solid var(--color-rule);
+      border-radius: var(--radius-md);
+      box-shadow: 0 1px 2px var(--color-shadow);
+    }
+    .panel-header {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      border-block-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .section-heading { justify-content: space-between; gap: var(--space-md); min-width: 0; }
+    .section-heading h2 { font-size: var(--text-md); font-weight: 600; letter-spacing: -0.015em; }
+    .panel-actions { flex-wrap: wrap; gap: var(--space-xs); }
+    .control {
+      min-height: 2.5rem;
+      padding-inline: var(--space-sm);
+      border: var(--rule-hair) solid var(--color-rule-strong);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-raised);
+      color: var(--color-ink);
+      font-size: var(--text-sm);
+    }
+    .control:focus-visible { border-color: var(--color-focus); }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th,
+    .data-table td { padding: var(--space-sm) var(--space-md); text-align: start; vertical-align: middle; }
+    .data-table th {
+      border-block-end: var(--rule-hair) solid var(--color-rule);
+      color: var(--color-muted);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      letter-spacing: 0.035em;
+    }
+    .data-table td { border-block-end: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); }
+    .data-table tbody tr:last-child td { border-block-end: 0; }
+    .title-cell { display: grid; gap: var(--space-2xs); min-width: 12rem; }
+    .title-cell strong { font-size: var(--text-sm); font-weight: 600; }
+    .title-cell span { color: var(--color-muted); font-size: var(--text-xs); }
+    .score { font-family: var(--font-mono); font-weight: 600; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      min-height: 1.75rem;
+      padding-inline: var(--space-sm);
+      border-radius: var(--radius-pill);
+      background: var(--color-paper-3);
+      color: var(--color-neutral);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      white-space: nowrap;
+    }
+    .badge::before {
+      content: "";
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: var(--radius-pill);
+      background: currentColor;
+    }
+    .badge--good { background: var(--color-accent-soft); color: var(--color-accent); }
+    .badge--warn { background: var(--color-warning-soft); color: var(--color-warning); }
+    .badge--danger { background: var(--color-danger-soft); color: var(--color-danger); }
+
+    .attention-list,
+    .task-list,
+    .review-list { display: grid; }
+    .attention-item,
+    .task-item,
+    .review-item {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      border-block-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .attention-item:last-child,
+    .task-item:last-child,
+    .review-item:last-child { border-block-end: 0; }
+    .person-cell { gap: var(--space-sm); min-width: 0; }
+    .avatar {
+      display: grid;
+      flex: 0 0 auto;
+      width: 2rem;
+      height: 2rem;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      background: var(--color-paper-3);
+      color: var(--color-ink-soft);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 600;
+    }
+    .person-copy { display: grid; gap: var(--space-3xs); min-width: 0; }
+    .person-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
+    .person-copy span { color: var(--color-muted); font-size: var(--text-xs); }
+    .attention-item .button { justify-self: start; }
+
+    .handoff-panel { margin-block-start: var(--space-lg); padding: var(--space-md); }
+    .handoff-panel h2 { font-size: var(--text-md); font-weight: 600; }
+    .flow {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-xs);
+      margin-block-start: var(--space-md);
+    }
+    .flow-step {
+      position: relative;
+      gap: var(--space-sm);
+      min-height: 3.5rem;
+      padding: var(--space-sm);
+      border: var(--rule-hair) solid var(--color-rule);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-raised);
+    }
+    .flow-step__mark {
+      display: grid;
+      flex: 0 0 auto;
+      width: 1.75rem;
+      height: 1.75rem;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      background: var(--color-paper-3);
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      font-weight: 600;
+    }
+    .flow-step.is-complete .flow-step__mark { background: var(--color-accent-soft); color: var(--color-accent); }
+    .flow-step.is-current { border-color: var(--color-ink-soft); }
+    .flow-step.is-current .flow-step__mark { background: var(--color-ink); color: var(--color-paper); }
+    .flow-step div:last-child { display: grid; gap: var(--space-3xs); }
+    .flow-step strong { font-size: var(--text-sm); }
+    .flow-step span { color: var(--color-muted); font-size: var(--text-xs); }
+
+    .portal-hero,
+    .review-hero {
+      display: grid;
+      gap: var(--space-lg);
+      padding-block: var(--space-md) var(--space-lg);
+      padding-inline: var(--space-lg);
+      background: var(--color-ink);
+      color: var(--color-paper);
+      border-radius: var(--radius-md);
+      margin-block-end: var(--space-lg);
+    }
+    .portal-hero .eyebrow-once,
+    .review-hero .eyebrow-once { color: var(--color-rule-strong); }
+    .portal-hero h1,
+    .review-hero h1 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+    }
+    .portal-hero p,
+    .review-hero p { max-width: 58ch; color: var(--color-rule-strong); }
+    .portal-hero .button,
+    .review-hero .button { justify-self: start; background: var(--color-paper); color: var(--color-ink); }
+    .progress-line { display: grid; gap: var(--space-xs); }
+    .progress-track { height: 0.375rem; overflow: clip; border-radius: var(--radius-pill); background: var(--color-paper-3); }
+    .progress-track span { display: block; width: 60%; height: 100%; background: var(--color-accent); }
+    .task-line { justify-content: space-between; gap: var(--space-md); }
+    .task-copy { display: grid; gap: var(--space-2xs); }
+    .task-copy strong { font-size: var(--text-sm); }
+    .task-copy span { color: var(--color-muted); font-size: var(--text-xs); }
+    .task-item.is-complete .task-copy strong { color: var(--color-muted); text-decoration: line-through; }
+
+    .form-grid { display: grid; gap: var(--space-md); padding: var(--space-md); }
+    .field { display: grid; gap: var(--space-xs); }
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      min-height: 2.75rem;
+      padding: var(--space-sm);
+      border: var(--rule-hair) solid var(--color-rule-strong);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-raised);
+      color: var(--color-ink);
+    }
+    .field textarea { min-height: 7rem; resize: vertical; }
+    .field input:disabled,
+    .field textarea:disabled,
+    .field select:disabled,
+    .control:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      background: var(--color-paper-3);
+    }
+    .field-help { min-height: 1lh; color: var(--color-muted); font-size: var(--text-xs); }
+    .field.is-error input,
+    .field.is-error textarea { border-color: var(--color-danger); }
+    .field.is-error .field-help { color: var(--color-danger); }
+    .field.is-success input,
+    .field.is-success textarea { border-color: var(--color-accent); }
+
+    .toast {
+      position: fixed;
+      right: var(--space-md);
+      bottom: var(--space-md);
+      z-index: 20;
+      max-width: min(24rem, calc(100vw - (2 * var(--space-md))));
+      padding: var(--space-sm) var(--space-md);
+      border: var(--rule-hair) solid var(--color-ink);
+      border-radius: var(--radius-sm);
+      background: var(--color-ink);
+      color: var(--color-paper);
+      box-shadow: 0 0.75rem 2rem var(--color-shadow);
+      font-size: var(--text-sm);
+    }
+    .toast[hidden] { display: none; }
+
+    .scorecard { display: grid; gap: var(--space-md); padding: var(--space-md); }
+    .score-row {
+      display: grid;
+      gap: var(--space-sm);
+      padding-block-end: var(--space-md);
+      border-block-end: var(--rule-hair) solid var(--color-rule);
+    }
+    .score-row:last-child { padding-block-end: 0; border-block-end: 0; }
+    .score-row__copy { display: grid; gap: var(--space-2xs); }
+    .score-row__copy strong { font-size: var(--text-sm); }
+    .score-row__copy span { color: var(--color-muted); font-size: var(--text-xs); }
+    .rating { display: flex; gap: var(--space-xs); }
+    .rating label {
+      display: grid;
+      width: 2.75rem;
+      height: 2.75rem;
+      place-items: center;
+      border: var(--rule-hair) solid var(--color-rule-strong);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+    }
+    .rating input { position: absolute; opacity: 0; pointer-events: none; }
+    .rating input:disabled + label { cursor: not-allowed; opacity: 0.55; background: var(--color-paper-3); }
+    .rating input:checked + label { background: var(--color-ink); color: var(--color-paper); border-color: var(--color-ink); }
+    .rating input:focus-visible + label { outline: var(--rule-strong) solid var(--color-focus); outline-offset: var(--rule-hair); }
+
+    .footer-line {
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-block-start: var(--space-xl);
+      padding-block-start: var(--space-md);
+      border-block-start: var(--rule-hair) solid var(--color-rule);
+      color: var(--color-muted);
+      font-size: var(--text-xs);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .button:hover,
+      .role-switch button:hover,
+      .side-nav button:hover,
+      .mobile-nav button:hover,
+      .icon-button:hover { transform: translateY(-1px); }
+      .button--primary:hover { background: var(--color-ink-soft); }
+      .button--quiet:hover,
+      .side-nav button:hover,
+      .mobile-nav button:hover { background: var(--color-paper-3); }
+      .data-table tbody tr:hover { background: var(--color-paper-2); }
+    }
+
+    @media (min-width: 40rem) {
+      .topbar { grid-template-columns: minmax(0, 1fr) auto; }
+      .role-switch { justify-self: end; }
+      .top-actions { grid-column: 1 / -1; }
+      .page-heading { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+      .page-heading__actions { justify-content: flex-end; }
+      .status-spine { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .metric:nth-child(2n) { border-inline-end: var(--rule-hair) solid var(--color-rule); }
+      .metric:last-child { border-inline-end: 0; }
+      .metric:nth-child(-n+2) { border-block-end: 0; }
+      .panel-header { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+      .panel-actions { justify-content: flex-end; }
+      .flow { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .portal-hero,
+      .review-hero { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+      .portal-hero .button,
+      .review-hero .button { justify-self: end; }
+      .score-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+    }
+
+    @media (min-width: 60rem) {
+      .topbar { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); padding-inline: var(--space-lg); }
+      .role-switch { justify-self: center; }
+      .top-actions { grid-column: auto; justify-content: flex-end; }
+      .app-shell { grid-template-columns: 14rem minmax(0, 1fr); }
+      .sidebar { display: flex; flex-direction: column; position: sticky; inset-block-start: 0; min-height: calc(100dvh - 4rem); }
+      .mobile-nav { display: none; }
+      .main-inner { padding: var(--space-xl); }
+      .workspace-grid { grid-template-columns: minmax(0, 2.15fr) minmax(17rem, 0.85fr); }
+    }
+
+    @media (min-width: 90rem) {
+      .app-shell { grid-template-columns: 16rem minmax(0, 1fr); }
+      .main-inner { padding-inline: var(--space-2xl); }
+      .metric { padding: var(--space-lg); }
+    }
+
+    @media (max-width: 39.999rem) {
+      .event-cluster { display: none; }
+      .top-actions .button--text { display: none; }
+      .data-table thead { display: none; }
+      .data-table,
+      .data-table tbody,
+      .data-table tr,
+      .data-table td { display: block; width: 100%; }
+      .data-table tr { padding: var(--space-md); border-block-end: var(--rule-hair) solid var(--color-rule); }
+      .data-table tbody tr:last-child { border-block-end: 0; }
+      .data-table td {
+        display: grid;
+        grid-template-columns: 7rem minmax(0, 1fr);
+        gap: var(--space-sm);
+        padding: var(--space-xs) 0;
+        border: 0;
+      }
+      .data-table td::before {
+        content: attr(data-label);
+        color: var(--color-muted);
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+      }
+      .title-cell { min-width: 0; }
+      .rating { flex-wrap: wrap; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 150ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 120ms !important;
+      }
+      .button:active,
+      .role-switch button:active,
+      .side-nav button:active,
+      .mobile-nav button:active,
+      .icon-button:active,
+      .button:hover,
+      .role-switch button:hover,
+      .side-nav button:hover,
+      .mobile-nav button:hover,
+      .icon-button:hover { transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to workspace</a>
+  <div class="sample-note">Design-direction demo · all names and counts below are sample event data</div>
+
+  <header class="topbar">
+    <div class="brand-cluster">
+      <a class="wordmark" href="#main" aria-label="Program Desk home">Program Desk</a>
+      <div class="event-cluster">
+        <span class="event-name">DevFlow Conf 2027</span>
+        <span>May 12–14</span>
+      </div>
+    </div>
+
+    <div class="role-switch" role="tablist" aria-label="Preview role">
+      <button type="button" role="tab" aria-selected="true" aria-controls="organizer-panel" data-role-target="organizer">Organizer</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="speaker-panel" data-role-target="speaker">Speaker</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="reviewer-panel" data-role-target="reviewer">Reviewer</button>
+    </div>
+
+    <div class="top-actions">
+      <button class="button button--text" type="button">View public program ↗</button>
+      <button class="button button--quiet" type="button">Jordan Alvarez</button>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Event workspace">
+      <p class="side-label">Event workspace</p>
+      <nav class="side-nav" aria-label="Organizer sections">
+        <button type="button" aria-current="page">Overview</button>
+        <button type="button">Submissions <span class="nav-count">8</span></button>
+        <button type="button">Review <span class="nav-count">2</span></button>
+        <button type="button">Speakers <span class="nav-count">5</span></button>
+        <button type="button">Content <span class="nav-count">3</span></button>
+        <button type="button">Agenda</button>
+        <button type="button">Publish</button>
+      </nav>
+      <p class="sidebar-note">One record from first submission to published agenda.</p>
+    </aside>
+
+    <main id="main">
+      <nav class="mobile-nav" aria-label="Mobile workspace">
+        <button type="button" aria-current="page">Overview</button>
+        <button type="button">Review</button>
+        <button type="button">Speakers</button>
+        <button type="button">Agenda</button>
+      </nav>
+
+      <section class="role-panel is-active" id="organizer-panel" data-role-panel="organizer" role="tabpanel">
+        <div class="main-inner">
+          <header class="page-heading">
+            <div>
+              <p class="eyebrow-once">Sunday · 96 days to doors</p>
+              <h1>Program readiness, without the spreadsheet chase.</h1>
+              <p>Decide the remaining proposals, clear speaker tasks, then publish the same record to the public agenda.</p>
+            </div>
+            <div class="page-heading__actions">
+              <button class="button button--quiet" type="button">Open CFP</button>
+              <button class="button button--primary" type="button">Review 2 decisions</button>
+            </div>
+          </header>
+
+          <section class="status-spine" aria-label="Program status">
+            <div class="metric">
+              <span class="metric-label">Submissions</span>
+              <strong class="metric-value tnum">8</strong>
+              <span class="metric-note">CFP closes Oct 15</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Accepted</span>
+              <strong class="metric-value tnum">5</strong>
+              <span class="metric-note">2 await decision</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Speaker tasks</span>
+              <strong class="metric-value tnum">7 / 10</strong>
+              <span class="metric-note">3 items outstanding</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Agenda</span>
+              <strong class="metric-value tnum">4 / 5</strong>
+              <span class="metric-note">1 session unscheduled</span>
+            </div>
+          </section>
+
+          <div class="workspace-grid">
+            <section class="panel" aria-labelledby="decision-title">
+              <header class="panel-header">
+                <div class="section-heading">
+                  <h2 id="decision-title">Submissions needing a decision</h2>
+                  <span class="badge badge--warn">2 open</span>
+                </div>
+                <div class="panel-actions">
+                  <select class="control" aria-label="Filter by track">
+                    <option>All tracks</option>
+                    <option>Platform &amp; Infra</option>
+                    <option>AI Engineering</option>
+                  </select>
+                  <button class="button button--quiet" type="button">Sort by score</button>
+                </div>
+              </header>
+              <table class="data-table tnum">
+                <thead>
+                  <tr><th>Submission</th><th>Track</th><th>Reviews</th><th>Score</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-label="Submission"><div class="title-cell"><strong>Taming 40-Minute CI</strong><span>Priya Raman · Workshop</span></div></td>
+                    <td data-label="Track">Platform &amp; Infra</td>
+                    <td data-label="Reviews">2 / 2</td>
+                    <td data-label="Score"><span class="score">4.3</span></td>
+                    <td data-label="Status"><span class="badge badge--warn">Decide</span></td>
+                  </tr>
+                  <tr>
+                    <td data-label="Submission"><div class="title-cell"><strong>Your AI Pair Programmer Is Lying to You</strong><span>Marcus Okafor · Talk</span></div></td>
+                    <td data-label="Track">AI Engineering</td>
+                    <td data-label="Reviews">2 / 2</td>
+                    <td data-label="Score"><span class="score">3.1</span></td>
+                    <td data-label="Status"><span class="badge badge--warn">Decide</span></td>
+                  </tr>
+                  <tr>
+                    <td data-label="Submission"><div class="title-cell"><strong>Docs That Answer Back</strong><span>Lena Ortiz · Talk</span></div></td>
+                    <td data-label="Track">Developer Experience</td>
+                    <td data-label="Reviews">1 / 2</td>
+                    <td data-label="Score"><span class="score">—</span></td>
+                    <td data-label="Status"><span class="badge badge--danger">Review late</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <aside class="panel" aria-labelledby="attention-title">
+              <header class="panel-header">
+                <div class="section-heading">
+                  <h2 id="attention-title">Needs attention</h2>
+                  <span class="meta">Today</span>
+                </div>
+              </header>
+              <div class="attention-list">
+                <article class="attention-item">
+                  <div class="person-cell">
+                    <span class="avatar" aria-hidden="true">PR</span>
+                    <div class="person-copy"><strong>Priya Raman</strong><span>Final headshot · due Apr 14</span></div>
+                  </div>
+                  <button class="button button--quiet" type="button">Send reminder</button>
+                </article>
+                <article class="attention-item">
+                  <div class="person-cell">
+                    <span class="avatar" aria-hidden="true">MO</span>
+                    <div class="person-copy"><strong>Marcus Okafor</strong><span>Session slides · due May 1</span></div>
+                  </div>
+                  <button class="button button--quiet" type="button">Open record</button>
+                </article>
+                <article class="attention-item">
+                  <div class="person-cell">
+                    <span class="avatar" aria-hidden="true">SW</span>
+                    <div class="person-copy"><strong>Sam Whitfield</strong><span>1 assigned review overdue</span></div>
+                  </div>
+                  <button class="button button--quiet" type="button">Nudge reviewer</button>
+                </article>
+              </div>
+            </aside>
+          </div>
+
+          <section class="panel handoff-panel" aria-labelledby="flow-title">
+            <div class="section-heading">
+              <h2 id="flow-title">Record handoff</h2>
+              <span class="meta">Taming 40-Minute CI</span>
+            </div>
+            <div class="flow">
+              <div class="flow-step is-complete"><span class="flow-step__mark">✓</span><div><strong>Submitted</strong><span>Sep 18</span></div></div>
+              <div class="flow-step is-complete"><span class="flow-step__mark">✓</span><div><strong>Reviewed</strong><span>2 scorecards</span></div></div>
+              <div class="flow-step is-current"><span class="flow-step__mark">3</span><div><strong>Decision</strong><span>Ready now</span></div></div>
+              <div class="flow-step"><span class="flow-step__mark">4</span><div><strong>Onboarding</strong><span>Tasks queued</span></div></div>
+              <div class="flow-step"><span class="flow-step__mark">5</span><div><strong>Published</strong><span>Awaiting approval</span></div></div>
+            </div>
+          </section>
+
+          <footer class="footer-line"><span>Program Desk · design direction v0.1</span><span>Sample event · no live data</span></footer>
+        </div>
+      </section>
+
+      <section class="role-panel" id="speaker-panel" data-role-panel="speaker" role="tabpanel" hidden>
+        <div class="main-inner">
+          <section class="portal-hero">
+            <div>
+              <p class="eyebrow-once">Speaker portal · Priya Raman</p>
+              <h1>Your session is accepted.</h1>
+              <p>Three tasks remain before “Taming 40-Minute CI” is ready for the published program.</p>
+            </div>
+            <button class="button" type="button">View session record</button>
+          </section>
+
+          <div class="workspace-grid">
+            <section class="panel" aria-labelledby="tasks-title">
+              <header class="panel-header">
+                <div>
+                  <div class="section-heading"><h2 id="tasks-title">Onboarding tasks</h2><span class="badge badge--warn">3 remaining</span></div>
+                  <div class="progress-line"><span class="meta">60% complete</span><div class="progress-track" aria-label="60 percent complete"><span></span></div></div>
+                </div>
+              </header>
+              <div class="task-list">
+                <article class="task-item is-complete">
+                  <div class="task-line"><div class="task-copy"><strong>Confirm speaker profile</strong><span>Completed Apr 8</span></div><span class="badge badge--good">Complete</span></div>
+                </article>
+                <article class="task-item is-complete">
+                  <div class="task-line"><div class="task-copy"><strong>Upload session presentation</strong><span>slides.pdf · version 2</span></div><span class="badge badge--good">Uploaded</span></div>
+                </article>
+                <article class="task-item">
+                  <div class="task-line"><div class="task-copy"><strong>Upload final headshot</strong><span>Print quality · due Apr 14</span></div><button class="button button--quiet" type="button">Upload file</button></div>
+                </article>
+                <article class="task-item">
+                  <div class="task-line"><div class="task-copy"><strong>Confirm AV requirements</strong><span>Due Apr 21</span></div><button class="button button--quiet" type="button">Open form</button></div>
+                </article>
+              </div>
+            </section>
+
+            <aside class="panel" aria-labelledby="profile-title">
+              <header class="panel-header"><div class="section-heading"><h2 id="profile-title">Public profile</h2><span class="badge badge--good">Live preview</span></div></header>
+              <form class="form-grid">
+                <label class="field is-success"><span class="field-label">Job title</span><input value="Principal Platform Engineer"><span class="field-help">✓ Saved to the organizer record</span></label>
+                <label class="field"><span class="field-label">Company</span><input value="Northstar Labs"><span class="field-help">Shown on the speaker gallery</span></label>
+                <label class="field"><span class="field-label">Biography</span><textarea>Priya builds internal platforms that make delivery systems easier to trust and operate.</textarea><span class="field-help">237 of 500 characters</span></label>
+                <button class="button button--primary" type="button">Save profile</button>
+              </form>
+            </aside>
+          </div>
+
+          <footer class="footer-line"><span>Speaker access is scoped to Priya’s sessions and tasks</span><span>DevFlow Conf 2027</span></footer>
+        </div>
+      </section>
+
+      <section class="role-panel" id="reviewer-panel" data-role-panel="reviewer" role="tabpanel" hidden>
+        <div class="main-inner">
+          <section class="review-hero">
+            <div>
+              <p class="eyebrow-once">Initial Review · Sam Whitfield</p>
+              <h1>Two assigned proposals. Nothing else.</h1>
+              <p>Reviewers see only their queue, the current round’s scorecard, and the deadline.</p>
+            </div>
+            <button class="button" type="button">Review deadline · Oct 15</button>
+          </section>
+
+          <div class="workspace-grid">
+            <section class="panel" aria-labelledby="proposal-title">
+              <header class="panel-header">
+                <div class="section-heading"><h2 id="proposal-title">Taming 40-Minute CI</h2><span class="badge">Workshop</span></div>
+              </header>
+              <div class="form-grid">
+                <div class="field"><span class="field-label">Abstract</span><p>Long CI cycles hide flaky tests, slow feedback, and avoidable handoffs. This workshop gives platform teams a practical method for finding the bottleneck and keeping the fix measurable.</p><span class="field-help">Platform &amp; Infra · Intermediate</span></div>
+                <div class="field"><span class="field-label">Key takeaway</span><p>Participants leave with a repeatable CI bottleneck audit they can run in one working session.</p><span class="field-help">Submitted Sep 18</span></div>
+                <div class="field"><span class="field-label">Workshop prerequisites</span><p>Bring one recent pipeline trace or build log.</p><span class="field-help">Visible because the selected format is Workshop</span></div>
+              </div>
+            </section>
+
+            <aside class="panel" aria-labelledby="scorecard-title">
+              <header class="panel-header"><div class="section-heading"><h2 id="scorecard-title">Scorecard</h2><span class="meta">Draft saved</span></div></header>
+              <form class="scorecard">
+                <fieldset class="score-row">
+                  <legend class="score-row__copy"><strong>Originality</strong><span>1 = familiar · 5 = distinct</span></legend>
+                  <div class="rating" aria-label="Originality rating">
+                    <input id="o1" name="originality" type="radio"><label for="o1">1</label>
+                    <input id="o2" name="originality" type="radio"><label for="o2">2</label>
+                    <input id="o3" name="originality" type="radio"><label for="o3">3</label>
+                    <input id="o4" name="originality" type="radio" checked><label for="o4">4</label>
+                    <input id="o5" name="originality" type="radio"><label for="o5">5</label>
+                  </div>
+                </fieldset>
+                <label class="field"><span class="field-label">Recommendation</span><select><option>Accept</option><option>Maybe</option><option>Reject</option></select><span class="field-help">Visible to organizers after submission</span></label>
+                <label class="field"><span class="field-label">Comments</span><textarea>Specific, practical, and appropriate for the track. The prerequisites make the workshop format credible.</textarea><span class="field-help">Draft saved locally</span></label>
+                <button class="button button--primary" type="button">Submit review</button>
+              </form>
+            </aside>
+          </div>
+
+          <footer class="footer-line"><span>Reviewer queue · 1 of 2 complete</span><span>Blind review mode enabled</span></footer>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script>
+    const roleButtons = [...document.querySelectorAll("[data-role-target]")];
+    const rolePanels = [...document.querySelectorAll("[data-role-panel]")];
+    const toast = document.querySelector(".toast");
+    let toastTimer;
+
+    function announce(message) {
+      window.clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.hidden = false;
+      toastTimer = window.setTimeout(() => {
+        toast.hidden = true;
+      }, 2600);
+    }
+
+    function selectRole(role, moveFocus = false) {
+      roleButtons.forEach((button) => {
+        const selected = button.dataset.roleTarget === role;
+        button.setAttribute("aria-selected", String(selected));
+        button.tabIndex = selected ? 0 : -1;
+        if (selected && moveFocus) button.focus({ preventScroll: true });
+      });
+      rolePanels.forEach((panel) => {
+        const selected = panel.dataset.rolePanel === role;
+        panel.classList.toggle("is-active", selected);
+        panel.hidden = !selected;
+      });
+    }
+
+    roleButtons.forEach((button, index) => {
+      button.addEventListener("click", () => selectRole(button.dataset.roleTarget));
+      button.addEventListener("keydown", (event) => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const next = (index + direction + roleButtons.length) % roleButtons.length;
+        selectRole(roleButtons[next].dataset.roleTarget, true);
+      });
+    });
+
+    document.querySelectorAll(".side-nav button, .mobile-nav button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const scope = button.closest("nav");
+        scope.querySelectorAll("button").forEach((item) => item.removeAttribute("aria-current"));
+        button.setAttribute("aria-current", "page");
+        announce(`${button.textContent.trim()} workspace selected.`);
+      });
+    });
+
+    const trackFilter = document.querySelector('[aria-label="Filter by track"]');
+    const submissionRows = [...document.querySelectorAll(".data-table tbody tr")];
+    trackFilter.addEventListener("change", () => {
+      const selected = trackFilter.value;
+      submissionRows.forEach((row) => {
+        const track = row.querySelector('[data-label="Track"]').textContent.trim();
+        row.hidden = selected !== "All tracks" && track !== selected;
+      });
+      announce(`${selected} filter applied.`);
+    });
+
+    const sortButton = [...document.querySelectorAll("button")].find((button) => button.textContent.trim() === "Sort by score");
+    let scoreDescending = true;
+    sortButton.addEventListener("click", () => {
+      scoreDescending = !scoreDescending;
+      const direction = scoreDescending ? -1 : 1;
+      [...submissionRows]
+        .sort((rowA, rowB) => {
+          const scoreA = Number.parseFloat(rowA.querySelector(".score").textContent) || -1;
+          const scoreB = Number.parseFloat(rowB.querySelector(".score").textContent) || -1;
+          return (scoreA - scoreB) * direction;
+        })
+        .forEach((row) => row.parentElement.append(row));
+      sortButton.setAttribute("aria-pressed", String(!scoreDescending));
+      announce(`Sorted by score, ${scoreDescending ? "highest" : "lowest"} first.`);
+    });
+
+    const confirmationLabels = new Map([
+      ["Send reminder", "Reminder sent"],
+      ["Nudge reviewer", "Reviewer nudged"],
+      ["Save profile", "Profile saved"],
+      ["Submit review", "Review submitted"]
+    ]);
+
+    document.querySelectorAll("button").forEach((button) => {
+      if (button.matches("[data-role-target], .side-nav button, .mobile-nav button") || button === sortButton) return;
+      button.addEventListener("click", () => {
+        const label = button.textContent.trim();
+        if (confirmationLabels.has(label)) {
+          const confirmation = confirmationLabels.get(label);
+          button.textContent = confirmation;
+          button.classList.add("is-success");
+          button.disabled = true;
+          announce(`${confirmation}.`);
+          return;
+        }
+        announce(`${label} — preview action acknowledged.`);
+      });
+    });
+  </script>
+</body>
+</html>
