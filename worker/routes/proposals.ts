@@ -54,6 +54,7 @@ proposals.get("/", async (context) => {
             ROUND(AVG(reviews.aggregate_score), 2) AS aggregate_score,
             ai_recommendations.disposition AS ai_disposition,
             ai_recommendations.confidence AS ai_confidence,
+            ai_recommendations.override_disposition AS ai_override_disposition,
             COUNT(DISTINCT review_assignments.id) AS assignment_count,
             COUNT(DISTINCT CASE WHEN review_assignments.status = 'submitted' THEN review_assignments.id END) AS completed_reviews
      FROM proposals

@@ -74,7 +74,9 @@ export function ProposalsPanel({ role, eventSlug }: { role: "organizer" | "speak
           <span><strong>{item.title}</strong><small>{item.submitter_name}</small></span>
           <span>{item.track_name ?? "Unassigned"}<small>{item.format_name}</small></span>
           <span><StatusChip value={item.status} /><small>{item.completed_reviews}/{item.assignment_count} reviews</small></span>
-          <span><strong>{item.aggregate_score ?? "—"}</strong><small>{item.ai_disposition ? `AI: ${item.ai_disposition}` : "No AI advice"}</small></span>
+          <span><strong>{item.aggregate_score ?? "—"}</strong><small>{item.ai_override_disposition
+            ? `${item.ai_override_disposition} · human override`
+            : item.ai_disposition ? `AI: ${item.ai_disposition}` : "No AI advice"}</small></span>
         </button>)}
       </div>
       {!rows.length ? <EmptyBlock title="No matching proposals">Clear the search or create the first submission.</EmptyBlock> : null}
