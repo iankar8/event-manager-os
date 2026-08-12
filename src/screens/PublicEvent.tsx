@@ -38,9 +38,10 @@ function PublicHero({ data, eyebrow, title, support }: { data: PublicData; eyebr
 
 function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
   const closed = !data.form || data.form.status !== "published" || (data.form.closes_at && new Date(String(data.form.closes_at)).getTime() < Date.now());
-  const [title, setTitle] = useState("Taming 40-Minute CI: Incremental Builds at Monorepo Scale");
+  const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState(""); const [trackId, setTrackId] = useState(""); const [formatId, setFormatId] = useState("");
-  const [audience, setAudience] = useState("Intermediate"); const [keyTakeaway, setKey] = useState(""); const [prerequisites, setPrerequisites] = useState("");
+  const [audience, setAudience] = useState(""); const [keyTakeaway, setKey] = useState(""); const [prerequisites, setPrerequisites] = useState("");
+  const [speakerBio, setSpeakerBio] = useState(""); const [notesForReviewers, setNotes] = useState("");
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [message, setMessage] = useState<string | null>(null); const [showSignup, setShowSignup] = useState(false);
   const selectedFormat = data.formats.find((format) => format.id === formatId)?.name;
@@ -57,7 +58,7 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
   async function submit(status: "draft" | "submitted") {
     try { const result = await apiRequest<{ message: string }>(`/api/public/${slug}/proposals`, { method: "POST",
       body: JSON.stringify({ title, abstract, trackId: trackId || null, formatId: formatId || null, audienceLevel: audience,
-        notesForReviewers: "Previously presented a shorter version; this is expanded with new data.", keyTakeaway,
+        notesForReviewers, speakerBio, keyTakeaway,
         workshopPrerequisites: prerequisites, answers, status }) }); setMessage(result.message); }
     catch (reason) { setMessage(reason instanceof Error ? reason.message : "Submission failed."); }
   }
@@ -70,8 +71,9 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
         <label>Abstract <em>Required</em><textarea required rows={8} value={abstract} onChange={(event) => setAbstract(event.target.value)} placeholder="What problem will this session solve, and what evidence will you share?" /></label>
         <div className="two-field-row"><label>Track <em>Required</em><select required value={trackId} onChange={(event) => setTrackId(event.target.value)}><option value="">Choose a track…</option>{data.tracks.map((track) => <option value={track.id} key={track.id}>{track.name}</option>)}</select></label>
           <label>Session format <em>Required</em><select required value={formatId} onChange={(event) => setFormatId(event.target.value)}><option value="">Choose a format…</option>{data.formats.map((format) => <option value={format.id} key={format.id}>{format.name}</option>)}</select></label></div>
-        <label>Audience level <em>Required</em><select required value={audience} onChange={(event) => setAudience(event.target.value)}><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></label>
-        <label>Speaker bio <em>Required</em><textarea required rows={4} defaultValue="Priya Raman is a Principal Engineer at Latticework Systems where she leads the build-tooling platform team." /></label>
+        <label>Audience level <em>Required</em><select required value={audience} onChange={(event) => setAudience(event.target.value)}><option value="">Choose an audience level…</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></label>
+        <label>Speaker bio <em>Required</em><textarea required rows={4} value={speakerBio} onChange={(event) => setSpeakerBio(event.target.value)} placeholder="The background that makes you the right person to give this talk." /></label>
+        <label>Notes for reviewers<textarea rows={3} value={notesForReviewers} onChange={(event) => setNotes(event.target.value)} placeholder="Anything the committee should know that does not belong in the public abstract." /></label>
         <label>Key takeaway <em>Required</em><input required value={keyTakeaway} onChange={(event) => setKey(event.target.value)} placeholder="A decision framework attendees can apply immediately" /></label>
         {selectedFormat === "Workshop (120 min)" ? <label className="conditional-field">Workshop prerequisites <span>Shown because Workshop is selected</span><textarea rows={4} value={prerequisites} onChange={(event) => setPrerequisites(event.target.value)} /></label> : null}
         {customFields.map((field) => <label className={field.condition_field_key ? "conditional-field" : undefined} key={field.id}>{field.label} {field.required ? <em>Required</em> : null}{field.help_text ? <span>{field.help_text}</span> : null}
@@ -89,9 +91,29 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
 }
 
 function SignupForm({ slug, onCreated }: { slug: string; onCreated: (message: string) => void }) {
-  const [name, setName] = useState("Priya Raman"); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  async function submit(event: FormEvent) { event.preventDefault(); const result = await apiRequest<{ message: string }>(`/api/public/${slug}/signup`, { method: "POST", body: JSON.stringify({ name, email, password, title: "Principal Engineer", company: "Latticework Systems", bio: "Speaker profile" }) }); onCreated(result.message); }
-  return <form className="signup-form" onSubmit={submit}><label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label><label>Password<input minLength={8} type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label><button className="button button-accent button-small">Create account</button></form>;
+  const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
+  const [title, setTitle] = useState(""); const [company, setCompany] = useState("");
+  const [error, setError] = useState<string | null>(null); const [pending, setPending] = useState(false);
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setError(null); setPending(true);
+    try {
+      const result = await apiRequest<{ message: string }>(`/api/public/${slug}/signup`, { method: "POST",
+        body: JSON.stringify({ name, email, password, title, company, bio: "" }) });
+      onCreated(result.message);
+    } catch (reason) {
+      // Without this the request simply rejected and the panel sat there looking idle.
+      setError(reason instanceof Error ? reason.message : "The account could not be created.");
+    } finally { setPending(false); }
+  }
+  return <form className="signup-form" onSubmit={submit}>
+    <label>Name<input required value={name} onChange={(event) => setName(event.target.value)} /></label>
+    <label>Email<input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+    <label>Password<input minLength={8} required type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+    <label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+    <label>Company<input value={company} onChange={(event) => setCompany(event.target.value)} /></label>
+    <button className="button button-accent button-small" disabled={pending}>{pending ? "Creating…" : "Create account"}</button>
+    {error ? <Notice tone="warning">{error}</Notice> : null}
+  </form>;
 }
 
 function SessionsSurface({ data }: { data: PublicData }) {

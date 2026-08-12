@@ -88,8 +88,23 @@ reviews.get("/", async (context) => {
     if (!organizer && assignment.blind_review === 1) return { ...assignment, submitter_name: null };
     return assignment;
   });
+
+  // A submitted scorecard has to read back as what was written, so the stored
+  // criterion values travel with the assignments. Reviewers receive only their
+  // own answers; organizers see the event's, matching the assignment scoping above.
+  const reviewValues = await context.env.DB.prepare(
+    `SELECT reviews.assignment_id, review_values.criterion_id, review_values.value_json
+     FROM review_values
+     JOIN reviews ON reviews.id = review_values.review_id
+     JOIN review_assignments ON review_assignments.id = reviews.assignment_id
+     JOIN review_rounds ON review_rounds.id = review_assignments.round_id
+     JOIN review_plans ON review_plans.id = review_rounds.plan_id
+     WHERE review_plans.event_id = ? AND (? = 1 OR review_assignments.reviewer_id = ?)`,
+  ).bind(session.eventId, organizer ? 1 : 0, session.userId).all<{ assignment_id: string; criterion_id: string; value_json: string }>();
+
   return context.json({ plans: plans.results, rounds: rounds.results, criteria: criteria.results,
-    reviewers: reviewers.results, poolMembers: poolMembers.results, assignments: safeAssignments, results: results.results });
+    reviewers: reviewers.results, poolMembers: poolMembers.results, assignments: safeAssignments, results: results.results,
+    reviewValues: reviewValues.results });
 });
 
 reviews.post("/profile", async (context) => {

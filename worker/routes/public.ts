@@ -96,7 +96,8 @@ publicRoutes.post("/:slug/proposals", async (context) => {
     (form.closes_at && new Date(form.closes_at).getTime() < now)) return context.json({ error: "Submissions are closed." }, 409);
   const parsed = z.object({ title: z.string().min(3), abstract: z.string().default(""), trackId: z.string().nullable().optional(),
     formatId: z.string().nullable().optional(), audienceLevel: z.string().optional(), notesForReviewers: z.string().optional(),
-    keyTakeaway: z.string().optional(), workshopPrerequisites: z.string().optional(), status: z.enum(["draft", "submitted"]),
+    keyTakeaway: z.string().optional(), workshopPrerequisites: z.string().optional(), speakerBio: z.string().optional(),
+    status: z.enum(["draft", "submitted"]),
     answers: z.record(z.string(), z.union([z.string(), z.number(), z.array(z.string())])).default({}) })
     .safeParse(await context.req.json().catch(() => null));
   if (!parsed.success) return context.json({ error: "Add a proposal title." }, 400);
@@ -140,6 +141,15 @@ publicRoutes.post("/:slug/proposals", async (context) => {
       "INSERT INTO proposal_participants (proposal_id, user_id, role_label, is_primary, sort_order) VALUES (?, ?, 'Primary speaker', 1, 1)",
     ).bind(proposalId, session.userId),
   ];
+  // The bio is collected on the submission form, so it has to reach the speaker's
+  // profile; previously the field was rendered but never read, and whatever the
+  // speaker typed was discarded on submit. Only fill an empty profile — a returning
+  // speaker's curated bio is authoritative and a new proposal must not overwrite it.
+  if (parsed.data.speakerBio?.trim()) {
+    statements.push(context.env.DB.prepare(
+      "UPDATE users SET bio = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND (bio IS NULL OR TRIM(bio) = '')",
+    ).bind(parsed.data.speakerBio.trim(), session.userId));
+  }
   for (const field of customFields) {
     const value = parsed.data.answers[String(field.id)];
     if (value === undefined || value === "") continue;

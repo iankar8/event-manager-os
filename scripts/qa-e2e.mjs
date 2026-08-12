@@ -81,6 +81,18 @@ try {
   assert.equal(formSetup.field.status, 200, `Organizer should be able to add a custom CFP field: ${JSON.stringify(formSetup.field.body)}`);
   const demoSlug = formSetup.workspace.session.eventSlug;
 
+  // The public call for speakers must open empty. It previously arrived carrying a
+  // seeded proposal's title and another speaker's bio, which reads to a reader as
+  // one submitter's content leaking to anonymous visitors.
+  const anonContext = await browser.newContext();
+  const anonPage = await anonContext.newPage();
+  await anonPage.goto(`${baseURL}/events/${demoSlug}/cfp`);
+  await anonPage.getByRole("heading", { name: /Bring the talk only you can give/ }).waitFor();
+  const prefilled = await anonPage.evaluate(() => [...document.querySelectorAll(".public-form input, .public-form textarea")]
+    .map((el) => el.value).filter((value) => value.trim().length > 0));
+  assert.deepEqual(prefilled, [], `The anonymous submission form must open empty, got: ${JSON.stringify(prefilled)}`);
+  await anonContext.close();
+
   const publicApi = await context.request.get(`${baseURL}/api/v1/events/${demoSlug}/sessions`);
   assert.equal(publicApi.status(), 200, "The documented public API must serve the published event without a session cookie");
   const publicApiBody = await publicApi.json();
@@ -197,6 +209,18 @@ try {
   }, { assignmentId: reviewerData.assignments.find((item) => String(item.title).startsWith("Taming 40-Minute CI")).id, criteria: reviewerData.criteria });
   assert.equal(resubmission.status, 200, `Review resubmission should update the canonical review: ${JSON.stringify(resubmission.body)}`);
 
+  // A submitted scorecard must read back as what was written. Qualitative answers
+  // used to vanish on reload while numeric ones appeared to survive only because
+  // they matched the form's default.
+  const redisplayed = await page.evaluate(async () => (await fetch("/api/reviews")).json());
+  const ciAssignmentId = redisplayed.assignments.find((item) => String(item.title).startsWith("Taming 40-Minute CI")).id;
+  const storedValues = (redisplayed.reviewValues ?? []).filter((value) => value.assignment_id === ciAssignmentId);
+  assert.equal(storedValues.length > 0, true, "A submitted review must return its stored criterion values");
+  assert.equal(storedValues.some((value) => String(value.value_json).includes("Accept")), true,
+    "The reviewer's recommendation must survive a reload");
+  assert.equal(storedValues.some((value) => String(value.value_json).includes("Strong practical content")), true,
+    "The reviewer's written comments must survive a reload");
+
   await page.getByRole("button", { name: "Organizer", exact: true }).click();
   await page.getByRole("button", { name: "Proposals", exact: true }).click();
   await page.getByRole("row", { name: /Taming 40-Minute CI/ }).click();
@@ -292,11 +316,19 @@ try {
   await submissionPage.getByLabel(/Abstract/).fill("A practical account of keeping one program record intact across review, onboarding, scheduling, and public publishing.");
   await submissionPage.getByLabel(/Track/).selectOption({ index: 1 });
   await submissionPage.getByLabel(/Session format/).selectOption({ label: "Talk (30 min)" });
+  await submissionPage.getByLabel(/Audience level/).selectOption({ label: "Intermediate" });
+  await submissionPage.getByLabel(/Speaker bio/).fill("Platform engineer who has run program operations for three community conferences.");
   await submissionPage.getByLabel(/Key takeaway/).fill("Treat handoffs as testable data contracts.");
   await submissionPage.getByLabel(/Target audience outcome/).fill("Attendees can audit every program transition.");
   await submissionPage.getByRole("button", { name: "Submit proposal", exact: true }).click();
   await submissionPage.getByText("Proposal submitted. A confirmation email has been logged.", { exact: true }).waitFor();
   await submissionPage.close();
+
+  // The bio on the submission form is read on submit rather than discarded, but a
+  // returning speaker's curated profile is authoritative and must survive it.
+  const bioReadback = await page.evaluate(async () => (await fetch("/api/speakers")).json());
+  assert.match(String(bioReadback.speakers[0].bio), /SBEK-PORTAL-BIO-01/,
+    "A new submission must not overwrite a speaker's existing profile bio");
   const slideTask = speakerReadback.tasks.find((task) => task.title === "Upload final slides" && String(task.session_title).startsWith("Your AI Pair Programmer"));
   assert.ok(slideTask, "Speaker should have a session-scoped slide request");
   for (const version of [1, 2]) {

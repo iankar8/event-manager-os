@@ -5,7 +5,21 @@ import { apiRequest } from "../lib/api";
 import { useResource } from "../lib/useResource";
 import { EmptyBlock, ErrorBlock, formatDate, LoadingBlock, Notice, Row, StatusChip } from "./shared";
 
-type ReviewData = { plans: Row[]; rounds: Row[]; criteria: Row[]; reviewers: Row[]; poolMembers: Row[]; assignments: Row[]; results: Row[] };
+type ReviewValue = { assignment_id: string; criterion_id: string; value_json: string };
+type ReviewData = { plans: Row[]; rounds: Row[]; criteria: Row[]; reviewers: Row[]; poolMembers: Row[]; assignments: Row[]; results: Row[]; reviewValues?: ReviewValue[] };
+
+/** Values already stored for this assignment, so a submitted scorecard reads back as written. */
+function savedValues(reviewValues: ReviewValue[] | undefined, assignmentId: unknown) {
+  const saved: Record<string, string | number> = {};
+  for (const entry of reviewValues ?? []) {
+    if (entry.assignment_id !== assignmentId) continue;
+    try {
+      const parsed = JSON.parse(entry.value_json);
+      if (typeof parsed === "string" || typeof parsed === "number") saved[entry.criterion_id] = parsed;
+    } catch { /* a value that will not parse is left to the criterion default */ }
+  }
+  return saved;
+}
 
 export function ReviewPanel({ role }: { role: "organizer" | "reviewer" }) {
   const resource = useResource<ReviewData>("/api/reviews");
@@ -144,16 +158,20 @@ function ReviewerQueue({ data, selectedId, setSelectedId, onMessage, reload, mes
       <section className="record-section"><h3>Submitted abstract</h3><p>{assignment.abstract}</p><dl className="record-facts"><div><dt>Track</dt><dd>{assignment.track_name}</dd></div><div><dt>Format</dt><dd>{assignment.format_name}</dd></div><div><dt>Audience</dt><dd>{assignment.audience_level}</dd></div></dl></section>
       <section className="record-section ai-record"><div className="section-label"><span>AI</span><div><strong>Organizer-provided research</strong><small>Sourced context · separate from the submitted abstract</small></div></div><p>{assignment.research_summary || "No research brief has been attached."}</p>
         {assignment.research_sources_json ? <ul className="source-list">{JSON.parse(String(assignment.research_sources_json)).map((source: Row) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ul> : null}</section>
-      <ReviewForm assignment={assignment} criteria={criteria} onSubmitted={async (text) => { onMessage(text); await reload(); }} />
+      <ReviewForm assignment={assignment} criteria={criteria} saved={savedValues(data.reviewValues, assignment.id)}
+        onSubmitted={async (text) => { onMessage(text); await reload(); }} />
     </> : <EmptyBlock title="Choose an assignment">Select an assigned proposal to begin.</EmptyBlock>}</section>
   </div>;
 }
 
-function ReviewForm({ assignment, criteria, onSubmitted }: { assignment: Row; criteria: Row[]; onSubmitted: (message: string) => void }) {
-  const [values, setValues] = useState<Record<string, string | number>>(() => Object.fromEntries(criteria.map((criterion) => [criterion.id, criterion.criterion_type === "numeric" ? 4 : ""])));
+function ReviewForm({ assignment, criteria, saved, onSubmitted }: { assignment: Row; criteria: Row[]; saved: Record<string, string | number>; onSubmitted: (message: string) => void }) {
+  const initial = () => Object.fromEntries(criteria.map((criterion) => [criterion.id,
+    saved[String(criterion.id)] ?? (criterion.criterion_type === "numeric" ? 4 : "")]));
+  const [values, setValues] = useState<Record<string, string | number>>(initial);
   const [pending, setPending] = useState(false);
   const [conflict, setConflict] = useState(false);
-  useEffect(() => setValues(Object.fromEntries(criteria.map((criterion) => [criterion.id, criterion.criterion_type === "numeric" ? 4 : ""]))), [assignment.id, criteria]);
+  const savedKey = JSON.stringify(saved);
+  useEffect(() => setValues(initial()), [assignment.id, criteria, savedKey]);
   async function submit(event: FormEvent) {
     event.preventDefault(); setPending(true);
     try {
