@@ -44,6 +44,7 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
   const [speakerBio, setSpeakerBio] = useState(""); const [notesForReviewers, setNotes] = useState("");
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [message, setMessage] = useState<string | null>(null); const [showSignup, setShowSignup] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const selectedFormat = data.formats.find((format) => format.id === formatId)?.name;
   const selectedTrack = data.tracks.find((track) => track.id === trackId)?.name;
   const coreFieldKeys = new Set(["title", "abstract", "track", "format", "audience", "speaker_bio", "key_takeaway", "workshop_prerequisites"]);
@@ -56,11 +57,16 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
   });
 
   async function submit(status: "draft" | "submitted") {
+    // Without this guard a double-click posts twice and leaves two identical
+    // draft rows in both the speaker's dashboard and the organizer's list.
+    if (submitting) return;
+    setSubmitting(true);
     try { const result = await apiRequest<{ message: string }>(`/api/public/${slug}/proposals`, { method: "POST",
       body: JSON.stringify({ title, abstract, trackId: trackId || null, formatId: formatId || null, audienceLevel: audience,
         notesForReviewers, speakerBio, keyTakeaway,
         workshopPrerequisites: prerequisites, answers, status }) }); setMessage(result.message); }
     catch (reason) { setMessage(reason instanceof Error ? reason.message : "Submission failed."); }
+    finally { setSubmitting(false); }
   }
 
   return <div className="cfp-page"><PublicHero data={data} eyebrow="Call for speakers" title="Bring the talk only you can give." support={String(data.event.description)} />
@@ -81,7 +87,7 @@ function PublicCfp({ data, slug }: { data: PublicData; slug: string }) {
             : field.field_type === "select" || field.field_type === "multi_select" ? <select required={Boolean(field.required)} value={answers[String(field.id)] ?? ""} onChange={(event) => setAnswers({ ...answers, [String(field.id)]: event.target.value })}><option value="">Choose…</option>{JSON.parse(String(field.options_json ?? "[]")).map((option: string) => <option key={option}>{option}</option>)}</select>
               : <input type={field.field_type === "number" ? "number" : "text"} required={Boolean(field.required)} value={answers[String(field.id)] ?? ""} onChange={(event) => setAnswers({ ...answers, [String(field.id)]: field.field_type === "number" ? Number(event.target.value) : event.target.value })} />}
         </label>)}
-        <div className="form-actions"><button type="button" className="button button-quiet" onClick={() => submit("draft")}>Save as draft</button><button className="button button-accent">Submit proposal</button></div>
+        <div className="form-actions"><button type="button" className="button button-quiet" disabled={submitting} onClick={() => submit("draft")}>{submitting ? "Saving…" : "Save as draft"}</button><button className="button button-accent" disabled={submitting}>{submitting ? "Submitting…" : "Submit proposal"}</button></div>
         {message ? <Notice tone={message.toLowerCase().includes("required") || message.toLowerCase().includes("sign in") ? "warning" : "success"}>{message}</Notice> : null}
       </form>
       <aside className="cfp-aside"><h3>Submitter access</h3><p>Sign in to save drafts, submit, edit while the call is open, and track committee decisions.</p><Link className="button button-ink" to="/login">Sign in as a speaker</Link><button className="button button-quiet" onClick={() => setShowSignup((value) => !value)}>Create submitter account</button>
