@@ -1,7 +1,9 @@
 # Program Desk judge walkthrough
 
-**Live application:** https://program-desk.ian-208.workers.dev  
-**Source:** https://github.com/iankar8/program-desk  
+**Live application:** https://program-desk.ian-208.workers.dev
+
+**Source:** https://github.com/iankar8/program-desk
+
 **Fastest entry:** choose **Explore demo**. Each visit creates an isolated persisted event and opens as Organizer.
 
 ## Evaluator credentials
