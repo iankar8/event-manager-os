@@ -83,7 +83,7 @@ integrations.get("/accelevents", async (context) => {
       `SELECT integration_runs.*, users.name AS approved_by_name
        FROM integration_runs LEFT JOIN users ON users.id = integration_runs.approved_by
        WHERE integration_runs.event_id = ? AND integration_runs.provider = 'accelevents'
-       ORDER BY integration_runs.created_at DESC LIMIT 20`,
+       ORDER BY integration_runs.created_at DESC, integration_runs.rowid DESC LIMIT 20`,
     ).bind(session.eventId).all(),
   ]);
   return context.json({

@@ -74,6 +74,10 @@ try {
   assert.equal(integration.apply.body.deliveryMode, "outbox", "Local verification must never claim an external Accelevents mutation");
   assert.deepEqual(integration.secondPreview.body.summary, { creates: 0, updates: 0, skips: 2, warnings: 0, applied: 0, failed: 0 },
     "An unchanged repeat sync must produce zero mutations");
+  await page.getByRole("button", { name: "Integrations", exact: true }).click();
+  await page.getByRole("heading", { name: "Accelevents handoff", exact: true }).waitFor();
+  assert.match(await page.getByText("No-ops", { exact: true }).locator("..").innerText(), /2\s+No-ops/,
+    "The organizer UI should expose the unchanged Accelevents receipt");
 
   const resourceBoundary = await page.evaluate(async () => {
     const before = await (await fetch("/api/speaker-resources")).json();
@@ -107,11 +111,13 @@ try {
   assert.equal(resourceBoundary.after.resources.some((item) => item.title === "Priya production room"), true, "A resource must survive a fresh read");
 
   const unrelatedContext = await browser.newContext();
-  const unrelatedLogin = await unrelatedContext.request.post(`${baseURL}/api/auth/login`, { data: {
-    email: "sbek-speaker2@example.com", password: "SbekTest!2027-spk2",
-  } });
-  assert.equal(unrelatedLogin.status(), 200, "The unrelated seeded speaker should be able to sign in");
-  const unrelatedResources = await (await unrelatedContext.request.get(`${baseURL}/api/speaker-resources`)).json();
+  const unrelatedPage = await unrelatedContext.newPage();
+  await unrelatedPage.goto(`${baseURL}/login`);
+  await unrelatedPage.getByLabel("Email address").fill("sbek-speaker2@example.com");
+  await unrelatedPage.getByLabel("Password").fill("SbekTest!2027-spk2");
+  await unrelatedPage.getByRole("button", { name: "Continue to workspace", exact: true }).click();
+  await unrelatedPage.getByRole("heading", { name: "My speaker portal", exact: true }).waitFor();
+  const unrelatedResources = await unrelatedPage.evaluate(async () => (await fetch("/api/speaker-resources")).json());
   assert.equal(unrelatedResources.resources.some((item) => item.title === "DevFlow speaker handbook"), true,
     "An unrelated speaker must see the event-wide handbook");
   assert.equal(unrelatedResources.resources.some((item) => item.title === "AI track rehearsal notes"), false,
@@ -127,10 +133,13 @@ try {
     const response = await fetch("/api/reviews");
     return response.json();
   });
-  const hiddenResponse = await context.request.get(`${baseURL}/api/proposals/${unassignedProposal.id}`);
-  assert.equal(hiddenResponse.status(), 404, "Reviewer must not read an unassigned proposal through the API");
-  const reviewerSync = await context.request.post(`${baseURL}/api/integrations/accelevents/preview`, { data: {} });
-  assert.equal(reviewerSync.status(), 403, "Reviewers must not inspect or trigger organizer integration state");
+  const reviewerBoundaries = await page.evaluate(async (proposalId) => {
+    const hidden = await fetch(`/api/proposals/${proposalId}`);
+    const sync = await fetch("/api/integrations/accelevents/preview", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    return { hidden: hidden.status, sync: sync.status };
+  }, unassignedProposal.id);
+  assert.equal(reviewerBoundaries.hidden, 404, "Reviewer must not read an unassigned proposal through the API");
+  assert.equal(reviewerBoundaries.sync, 403, "Reviewers must not inspect or trigger organizer integration state");
   await page.getByRole("combobox", { name: /Recommendation/ }).selectOption({ label: "Accept" });
   await page.getByRole("textbox", { name: /Comments/ }).fill("Strong practical content and a clear narrative arc; abstract could name the specific tooling used. Recommend accept for the Platform track.");
   await page.getByRole("button", { name: "Submit review", exact: true }).click();
@@ -248,10 +257,12 @@ try {
   const slideTask = speakerReadback.tasks.find((task) => task.title === "Upload final slides" && String(task.session_title).startsWith("Your AI Pair Programmer"));
   assert.ok(slideTask, "Speaker should have a session-scoped slide request");
   for (const version of [1, 2]) {
-    const upload = await context.request.post(`${baseURL}/api/speakers/tasks/${slideTask.id}/upload`, { multipart: {
-      file: { name: `slides-v${version}.pdf`, mimeType: "application/pdf", buffer: Buffer.from(`%PDF-1.4 Program Desk fixture version ${version}`) },
-    } });
-    assert.equal(upload.status(), 200, `Deliverable upload version ${version} should succeed`);
+    const uploadStatus = await page.evaluate(async ({ taskId, fileVersion }) => {
+      const data = new FormData();
+      data.append("file", new File([`%PDF-1.4 Program Desk fixture version ${fileVersion}`], `slides-v${fileVersion}.pdf`, { type: "application/pdf" }));
+      return (await fetch(`/api/speakers/tasks/${taskId}/upload`, { method: "POST", body: data })).status;
+    }, { taskId: slideTask.id, fileVersion: version });
+    assert.equal(uploadStatus, 200, `Deliverable upload version ${version} should succeed`);
   }
   const versionedFiles = await page.evaluate(async () => (await fetch("/api/speakers")).json());
   const taskVersions = versionedFiles.files.filter((file) => file.task_id === slideTask.id);
@@ -333,7 +344,7 @@ try {
   await mobilePage.getByRole("navigation", { name: "organizer navigation" }).waitFor({ state: "visible" });
   await mobileContext.close();
 
-  const unexpectedErrors = browserErrors.filter((message) => !/status of (?:400|409)\b/.test(message));
+  const unexpectedErrors = browserErrors.filter((message) => !/status of (?:400|403|404|409)\b/.test(message));
   assert.deepEqual(unexpectedErrors, [], `Browser console errors: ${unexpectedErrors.join(" | ")}`);
   console.log("Program Desk E2E: role scoping, speaker resources, API contract, safe Accelevents round trip, acceptance handoff, public surfaces, and mobile navigation passed.");
 } finally {

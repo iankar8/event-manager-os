@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, BookOpen, CalendarDays, ChevronDown, CircleAlert, ClipboardCheck, FileText,
-  FolderCheck, Globe2, LayoutDashboard, LogOut, Mail, Menu, RefreshCcw, Settings, Sparkles, Users,
+  FolderCheck, Globe2, LayoutDashboard, LogOut, Mail, Menu, PlugZap, RefreshCcw, Settings, Sparkles, Users,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -9,6 +9,7 @@ import { ApiError, apiRequest } from "../lib/api";
 import type { Role, WorkspaceContext } from "../types";
 import { CommunicationsPanel } from "../workspace/CommunicationsPanel";
 import { ContentPanel } from "../workspace/ContentPanel";
+import { IntegrationsPanel } from "../workspace/IntegrationsPanel";
 import { OverviewPanel } from "../workspace/OverviewPanel";
 import { PeoplePanel } from "../workspace/PeoplePanel";
 import { ProposalsPanel } from "../workspace/ProposalsPanel";
@@ -33,6 +34,7 @@ const navigation: Record<PersonaRole, NavItem[]> = {
     { key: "content", label: "Content & sessions", icon: FolderCheck },
     { key: "schedule", label: "Schedule", icon: CalendarDays },
     { key: "communications", label: "Communications", icon: Mail },
+    { key: "integrations", label: "Integrations", icon: PlugZap },
     { key: "publish", label: "Publish", icon: Globe2 },
     { key: "settings", label: "Settings", icon: Settings },
   ],
@@ -67,6 +69,7 @@ function sectionCopy(section: string, role: PersonaRole) {
     content: ["Content & sessions", "Approve and version public copy before it can enter the published program."],
     schedule: [role === "speaker" ? "My schedule" : "Schedule workbench", role === "speaker" ? "Your published sessions only." : "Draft, move, resize, validate, then publish without changing the live agenda early."],
     communications: ["Communications", "Preview editable templates and keep a receipt for every queued or sent message."],
+    integrations: ["Destination handoffs", "Preview approved records, require an explicit apply, and preserve a receipt for every external change."],
     publish: ["Publish & distribute", "Five attendee surfaces, retrievable embeds, JSON feeds, and one canonical public record."],
     settings: ["Program settings", "Submission form, collaborative domains, AI advisor prompt, and isolated events."],
   };
@@ -148,6 +151,7 @@ export function Workspace() {
       {section === "content" ? <ContentPanel /> : null}
       {section === "schedule" ? <SchedulePanel role={role === "speaker" ? "speaker" : "organizer"} /> : null}
       {section === "communications" ? <CommunicationsPanel /> : null}
+      {section === "integrations" ? <IntegrationsPanel /> : null}
       {section === "publish" ? <PublishPanel eventSlug={data.session.eventSlug} /> : null}
       {section === "settings" ? <SettingsPanel onEventChanged={load} /> : null}
     </main>

@@ -46,7 +46,7 @@ The password accounts use the same persisted role and event boundaries as real a
 ### 2:20–3:00 — replacement credibility
 
 1. Open **Communications** to preview recipients, merge data, exclusions, attachments, and outbox receipts without claiming a real send.
-2. Open **Settings → Accelevents**. The first approved simulation records speaker/session creates; an unchanged second preview produces zero mutations, and deletions become reconciliation warnings.
+2. Open **Integrations → Accelevents handoff**. The first approved simulation records speaker/session creates; an unchanged second preview produces zero mutations, and deletions become reconciliation warnings.
 3. Open `/api/v1/openapi.json` to show the versioned public contract. Finish on the Accelevents receipt: every outgoing change carries its source revision, exact scope, payload, actor, outcome, and stable destination identity.
 
 ## Verification receipt
