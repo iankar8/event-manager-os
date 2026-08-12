@@ -14,6 +14,7 @@ It is a competition-ready alternative to the speaker and content workflow in Ses
 
 ## What works
 
+- A lifecycle trace on the organizer Overview that follows one proposal from submission to published program. Every step cites the actor, the timestamp, the enforced rule, and the database row id behind the claim, and links to the surface holding that record. It is derived from persisted rows through an organizer-only, event-scoped endpoint; stages without evidence report themselves as unrecorded rather than filling in.
 - Custom CFP builder with required fields, dropdowns, conditional visibility, public draft/submission flow, deadlines, custom-answer round-tripping, confirmations, and editing locks.
 - Independent review rounds, round-specific reviewer pools, reviewer onboarding and capacity, manual and expertise-first balanced assignment, blind review, weighted scorecards, recusal, reminders, export, and human overrides of separate AI advice.
 - Event-scoped speaker roster, CSV import, status filters, magic-link invitations, speaker-owned profile/headshot editing, personalized tasks, and logged bulk communications.

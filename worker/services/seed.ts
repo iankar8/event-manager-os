@@ -18,6 +18,30 @@ const fixturePasswords = {
   speaker2: "SbekTest!2027-spk2",
 };
 
+/**
+ * Explicit fixture chronology. The demonstration program is fictional, but its
+ * sequence must be real: every stage of the lifecycle trace reads these values
+ * back out of the database, so they have to establish an order that actually
+ * happened rather than several CURRENT_TIMESTAMP values stamped at once.
+ */
+const timeline = {
+  proposalAiSubmitted: "2026-08-14T16:20:00Z",
+  proposalCiSubmitted: "2026-08-15T09:05:00Z",
+  proposalDocsSubmitted: "2026-08-20T11:40:00Z",
+  assignmentAiAssigned: "2026-08-17T15:00:00Z",
+  assignmentCiAssigned: "2026-08-18T15:00:00Z",
+  reviewAiSubmitted: "2026-08-24T18:35:00Z",
+  decisionAi: "2026-09-02T17:10:00Z",
+  taskConfirmed: "2026-09-05T14:12:00Z",
+  taskHeadshot: "2026-09-09T20:03:00Z",
+  taskBio: "2026-09-15T13:48:00Z",
+  taskRelease: "2026-09-21T16:27:00Z",
+  contentApproved: "2026-09-28T19:45:00Z",
+  revisionCreated: "2026-10-02T16:00:00Z",
+  revisionPublished: "2026-10-06T17:30:00Z",
+  draftRevisionCreated: "2026-10-08T15:20:00Z",
+} as const;
+
 export async function seedProgramWorkspace(
   db: D1Database,
   options: { demoKey?: string; canonical?: boolean } = {},
@@ -54,6 +78,9 @@ export async function seedProgramWorkspace(
   const criterionRecommendation = id("crt");
   const criterionComments = id("crt");
   const assignmentCi = id("asn");
+  const assignmentAi = id("asn");
+  const reviewAi = id("rvw");
+  const contentVersionAi = id("cvr");
   const sessionAi = id("ssn");
   const handbookResource = id("rsc");
   const rehearsalResource = id("rsc");
@@ -136,7 +163,7 @@ export async function seedProgramWorkspace(
     db.prepare("INSERT INTO cfp_fields (id, form_id, field_key, label, field_type, help_text, required, sort_order, condition_field_key, condition_value) VALUES (?, ?, 'workshop_prerequisites', 'Workshop prerequisites', 'long_text', 'Shown only for the workshop format.', 0, 8, 'format', 'Workshop (120 min)')").bind(id("fld"), formId),
     db.prepare(`INSERT INTO proposals
       (id, event_id, submitter_id, title, abstract, audience_level, notes_for_reviewers, track_id, format_id, status, submitted_at)
-      VALUES (?, ?, ?, ?, ?, 'Intermediate', ?, ?, ?, 'in_review', CURRENT_TIMESTAMP)`).bind(
+      VALUES (?, ?, ?, ?, ?, 'Intermediate', ?, ?, ?, 'in_review', ?)`).bind(
       proposalCi,
       eventId,
       speakerId,
@@ -145,10 +172,11 @@ export async function seedProgramWorkspace(
       "Previously presented a 10-minute version at PlatformCon; this is the expanded version with new data.",
       trackPlatform,
       formatTalk,
+      timeline.proposalCiSubmitted,
     ),
     db.prepare(`INSERT INTO proposals
       (id, event_id, submitter_id, title, abstract, audience_level, notes_for_reviewers, track_id, format_id, status, submitted_at, decided_at)
-      VALUES (?, ?, ?, ?, ?, 'Advanced', ?, ?, ?, 'accepted', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`).bind(
+      VALUES (?, ?, ?, ?, ?, 'Advanced', ?, ?, ?, 'accepted', ?, ?)`).bind(
       proposalAi,
       eventId,
       speakerId,
@@ -157,10 +185,12 @@ export async function seedProgramWorkspace(
       "Can also be delivered as a hands-on workshop.",
       trackAi,
       formatTalk,
+      timeline.proposalAiSubmitted,
+      timeline.decisionAi,
     ),
     db.prepare(`INSERT INTO proposals
       (id, event_id, submitter_id, title, abstract, audience_level, track_id, format_id, status, submitted_at)
-      VALUES (?, ?, ?, ?, ?, 'Beginner', ?, ?, 'submitted', CURRENT_TIMESTAMP)`).bind(
+      VALUES (?, ?, ?, ?, ?, 'Beginner', ?, ?, 'submitted', ?)`).bind(
       proposalDocs,
       eventId,
       speaker2Id,
@@ -168,6 +198,7 @@ export async function seedProgramWorkspace(
       "A practical tour of turning a static docs site into one that answers questions with citations, stays honest when it does not know, and costs under $50 per month.",
       trackDx,
       formatLightning,
+      timeline.proposalDocsSubmitted,
     ),
     db.prepare("INSERT INTO proposal_participants (proposal_id, user_id, role_label, is_primary, sort_order) VALUES (?, ?, 'Primary speaker', 1, 1)").bind(proposalCi, speakerId),
     db.prepare("INSERT INTO proposal_participants (proposal_id, user_id, role_label, is_primary, sort_order) VALUES (?, ?, 'Co-speaker', 0, 2)").bind(proposalCi, speaker2Id),
@@ -184,7 +215,23 @@ export async function seedProgramWorkspace(
     db.prepare("INSERT INTO reviewer_expertise (event_id, user_id, track_id, strength) VALUES (?, ?, ?, 3)").bind(eventId, reviewerId, trackPlatform),
     db.prepare("INSERT INTO reviewer_expertise (event_id, user_id, track_id, strength) VALUES (?, ?, ?, 2)").bind(eventId, reviewerId, trackAi),
     db.prepare("INSERT INTO round_reviewers (round_id, reviewer_id, status) VALUES (?, ?, 'assigned')").bind(roundInitial, reviewerId),
-    db.prepare("INSERT INTO review_assignments (id, round_id, proposal_id, reviewer_id, status, expertise_score, assignment_reason) VALUES (?, ?, ?, ?, 'assigned', 0.96, 'Strong Platform & Infra expertise; 1 of 8 capacity used.')").bind(assignmentCi, roundInitial, proposalCi, reviewerId),
+    db.prepare("INSERT INTO review_assignments (id, round_id, proposal_id, reviewer_id, status, expertise_score, assignment_reason, assigned_at, completed_at) VALUES (?, ?, ?, ?, 'submitted', 0.82, 'AI Engineering expertise match; verification tooling is within stated topics.', ?, ?)")
+      .bind(assignmentAi, roundInitial, proposalAi, reviewerId, timeline.assignmentAiAssigned, timeline.reviewAiSubmitted),
+    // aggregate_score is the weighted mean the submit route would compute for these
+    // values: (4 x weight 2 + 4 x weight 1) / 3 = 4. Seeding a different number would
+    // leave the stored score contradicting the criterion values a judge can open.
+    db.prepare("INSERT INTO reviews (id, assignment_id, reviewer_id, status, aggregate_score, submitted_at, created_at, updated_at) VALUES (?, ?, ?, 'submitted', 4, ?, ?, ?)")
+      .bind(reviewAi, assignmentAi, reviewerId, timeline.reviewAiSubmitted, timeline.assignmentAiAssigned, timeline.reviewAiSubmitted),
+    db.prepare("INSERT INTO review_values (review_id, criterion_id, value_json, numeric_value) VALUES (?, ?, ?, 4)")
+      .bind(reviewAi, criterionOriginality, JSON.stringify(4)),
+    db.prepare("INSERT INTO review_values (review_id, criterion_id, value_json, numeric_value) VALUES (?, ?, ?, 4)")
+      .bind(reviewAi, criterionRelevance, JSON.stringify(4)),
+    db.prepare("INSERT INTO review_values (review_id, criterion_id, value_json) VALUES (?, ?, ?)")
+      .bind(reviewAi, criterionRecommendation, JSON.stringify("Accept")),
+    db.prepare("INSERT INTO review_values (review_id, criterion_id, value_json) VALUES (?, ?, ?)")
+      .bind(reviewAi, criterionComments, JSON.stringify("Verification of generated code is an unsolved problem for most teams, and this is the rare proposal with production data behind it. The mutation-coverage section is the strongest part. Recommend accept for the AI Engineering track.")),
+    db.prepare("INSERT INTO review_assignments (id, round_id, proposal_id, reviewer_id, status, expertise_score, assignment_reason, assigned_at) VALUES (?, ?, ?, ?, 'assigned', 0.96, 'Strong Platform & Infra expertise; 2 of 8 capacity used.', ?)")
+      .bind(assignmentCi, roundInitial, proposalCi, reviewerId, timeline.assignmentCiAssigned),
     db.prepare("INSERT INTO research_briefs (id, proposal_id, summary, sources_json, warnings_json) VALUES (?, ?, ?, ?, '[]')").bind(
       id("rsh"),
       proposalCi,
@@ -201,7 +248,8 @@ export async function seedProgramWorkspace(
       "Strong audience fit, specific evidence, and a useful decision framework distinguish this proposal from generic CI talks.",
       "The abstract should name the tooling used and clarify what is new beyond the earlier short version.",
     ),
-    db.prepare("INSERT INTO decisions (id, proposal_id, disposition, decided_by, rationale) VALUES (?, ?, 'accepted', ?, 'Strong evidence and direct fit for the AI Engineering track.')").bind(id("dec"), proposalAi, organizerId),
+    db.prepare("INSERT INTO decisions (id, proposal_id, disposition, decided_by, rationale, decided_at) VALUES (?, ?, 'accepted', ?, 'Committee review recommended accept; strong evidence and direct fit for the AI Engineering track.', ?)")
+      .bind(id("dec"), proposalAi, organizerId, timeline.decisionAi),
     db.prepare("INSERT INTO sessions (id, event_id, proposal_id, title, description, track_id, format_id, source_type, content_status) VALUES (?, ?, ?, ?, ?, ?, ?, 'proposal', 'approved')").bind(
       sessionAi,
       eventId,
@@ -212,6 +260,19 @@ export async function seedProgramWorkspace(
       formatTalk,
     ),
     db.prepare("INSERT INTO session_participants (session_id, user_id, role_label, sort_order) VALUES (?, ?, 'Speaker', 1)").bind(sessionAi, speakerId),
+    db.prepare(`INSERT INTO content_versions (id, event_id, entity_type, entity_id, version, snapshot_json, editor_id, change_summary, created_at)
+      VALUES (?, ?, 'session', ?, 1, ?, ?, 'Tightened the public description and approved the session copy for the program.', ?)`).bind(
+      contentVersionAi,
+      eventId,
+      sessionAi,
+      JSON.stringify({
+        title: "Your AI Pair Programmer Is Lying to You: Verification Patterns That Scale",
+        description: "Code generation is easy; trusting it is hard. Learn practical verification patterns backed by production experience.",
+        content_status: "approved",
+      }),
+      organizerId,
+      timeline.contentApproved,
+    ),
     db.prepare(`INSERT INTO speaker_resources
       (id, event_id, title, summary, body, link_url, link_label, status, scope_type, sort_order, author_id)
       VALUES (?, ?, 'DevFlow speaker handbook', 'Arrival, production, and presentation guidance for every DevFlow speaker.',
@@ -230,14 +291,16 @@ export async function seedProgramWorkspace(
         'Use the west service elevator and check in with the stage manager before entering the green room.',
         'draft', 'session', ?, 30, ?)`)
       .bind(arrivalResource, eventId, sessionAi, organizerId),
-    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status) VALUES (?, ?, ?, ?, 'Confirm participation', '2027-04-01', 'complete')").bind(id("tsk"), eventId, sessionAi, speakerId),
-    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status) VALUES (?, ?, ?, ?, 'Upload headshot', '2027-04-01', 'complete')").bind(id("tsk"), eventId, sessionAi, speakerId),
-    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status) VALUES (?, ?, ?, ?, 'Complete bio and profile', '2027-04-01', 'complete')").bind(id("tsk"), eventId, sessionAi, speakerId),
+    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status, completed_at) VALUES (?, ?, ?, ?, 'Confirm participation', '2027-04-01', 'complete', ?)").bind(id("tsk"), eventId, sessionAi, speakerId, timeline.taskConfirmed),
+    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status, completed_at) VALUES (?, ?, ?, ?, 'Upload headshot', '2027-04-01', 'complete', ?)").bind(id("tsk"), eventId, sessionAi, speakerId, timeline.taskHeadshot),
+    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status, completed_at) VALUES (?, ?, ?, ?, 'Complete bio and profile', '2027-04-01', 'complete', ?)").bind(id("tsk"), eventId, sessionAi, speakerId, timeline.taskBio),
     db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status, task_type, accepted_types, max_file_bytes) VALUES (?, ?, ?, ?, 'Upload final slides', '2027-05-01', 'incomplete', 'file_request', '.pdf,.ppt,.pptx', 26214400)").bind(id("tsk"), eventId, sessionAi, speakerId),
-    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status) VALUES (?, ?, ?, ?, 'Sign speaker release form', '2027-04-15', 'complete')").bind(id("tsk"), eventId, sessionAi, speakerId),
-    db.prepare("INSERT INTO schedule_revisions (id, event_id, version, status, created_by, published_by, published_at) VALUES (?, ?, 1, 'published', ?, ?, CURRENT_TIMESTAMP)").bind(publishedRevision, eventId, organizerId, organizerId),
+    db.prepare("INSERT INTO speaker_tasks (id, event_id, session_id, speaker_id, title, due_at, status, completed_at) VALUES (?, ?, ?, ?, 'Sign speaker release form', '2027-04-15', 'complete', ?)").bind(id("tsk"), eventId, sessionAi, speakerId, timeline.taskRelease),
+    db.prepare("INSERT INTO schedule_revisions (id, event_id, version, status, created_by, published_by, published_at, created_at, updated_at) VALUES (?, ?, 1, 'published', ?, ?, ?, ?, ?)")
+      .bind(publishedRevision, eventId, organizerId, organizerId, timeline.revisionPublished, timeline.revisionCreated, timeline.revisionPublished),
     db.prepare("INSERT INTO schedule_items (id, revision_id, session_id, room_id, starts_at, ends_at, locked) VALUES (?, ?, ?, ?, '2027-05-12T10:00:00-07:00', '2027-05-12T10:30:00-07:00', 0)").bind(id("sit"), publishedRevision, sessionAi, roomMain),
-    db.prepare("INSERT INTO schedule_revisions (id, event_id, version, status, based_on_id, created_by) VALUES (?, ?, 2, 'draft', ?, ?)").bind(draftRevision, eventId, publishedRevision, organizerId),
+    db.prepare("INSERT INTO schedule_revisions (id, event_id, version, status, based_on_id, created_by, created_at, updated_at) VALUES (?, ?, 2, 'draft', ?, ?, ?, ?)")
+      .bind(draftRevision, eventId, publishedRevision, organizerId, timeline.draftRevisionCreated, timeline.draftRevisionCreated),
     db.prepare("INSERT INTO schedule_items (id, revision_id, session_id, room_id, starts_at, ends_at, locked) VALUES (?, ?, ?, ?, '2027-05-12T10:00:00-07:00', '2027-05-12T10:30:00-07:00', 0)").bind(id("sit"), draftRevision, sessionAi, roomMain),
   ];
 

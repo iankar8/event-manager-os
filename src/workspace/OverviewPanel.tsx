@@ -1,11 +1,26 @@
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, CircleAlert, ClipboardCheck, FileText } from "lucide-react";
 
-import type { WorkspaceContext } from "../types";
-
-const lifecycle = ["Submitted", "Reviewed", "Accepted", "Onboarding", "Approved", "Scheduled", "Published"];
+import { useResource } from "../lib/useResource";
+import type { TraceResponse, TraceStage, WorkspaceContext } from "../types";
+import { formatDate } from "./shared";
 
 function countByStatus(items: { status: string; count: number }[], status?: string) {
   return items.filter((item) => !status || item.status === status).reduce((sum, item) => sum + item.count, 0);
+}
+
+function stamp(value: string | null) {
+  return value ? formatDate(value, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : null;
+}
+
+/** The rail is seven columns wide, so it carries the date only; the evidence panel shows the full timestamp. */
+function railStamp(value: string | null) {
+  return value ? formatDate(value, { month: "short", day: "numeric" }) : null;
+}
+
+/** Receipts are shown truncated for width, but the value is always a real row id. */
+function shortReceipt(id: string) {
+  return id.length > 16 ? `${id.slice(0, 16)}…` : id;
 }
 
 export function OverviewPanel({ data, role, open }: {
@@ -33,7 +48,22 @@ export function OverviewPanel({ data, role, open }: {
     ["Speaker readiness", `${completedTasks}/${totalTasks}`, "My assigned tasks"],
     ["My sessions", String(data.summary.sessions), "No other speakers exposed"],
   ];
-  const recordTitle = role === "speaker" ? "Your AI Pair Programmer Is Lying to You" : "Taming 40-Minute CI";
+
+  // The trace is organizer-scoped on the server; other personas never request it.
+  const traceResource = useResource<TraceResponse>(role === "organizer" ? "/api/context/trace" : null);
+  const trace = traceResource.data?.trace ?? null;
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!trace || selectedKey) return;
+    // Open on the first stage still missing evidence, or the last recorded one.
+    const firstIncomplete = trace.stages.find((stage) => !stage.complete);
+    setSelectedKey(firstIncomplete?.key ?? trace.stages[trace.stages.length - 1]?.key ?? null);
+  }, [trace, selectedKey]);
+
+  const selected = trace?.stages.find((stage) => stage.key === selectedKey) ?? null;
+  const openTasks = totalTasks - completedTasks;
+  const incompleteStages = trace?.stages.filter((stage) => !stage.complete) ?? [];
 
   return <>
     <section className="metric-grid" aria-label={`${role} workspace summary`}>
@@ -41,31 +71,73 @@ export function OverviewPanel({ data, role, open }: {
     </section>
     <section className="workspace-grid">
       <article className="record-panel">
-        <header><div><p className="eyebrow">One record trace</p><h2>{recordTitle}</h2></div><span className="status-chip">{role === "speaker" ? "Onboarding" : "In review"}</span></header>
-        <div className="record-flow">
-          {lifecycle.map((step, index) => {
-            const completeThrough = role === "speaker" ? 3 : 1;
-            return <div key={step} className={index <= completeThrough ? "complete" : index === completeThrough + 1 ? "current" : ""}>
-              <span>{index <= completeThrough ? <Check size={12} /> : index + 1}</span>
-              <strong>{step}</strong><small>{index <= completeThrough ? "Recorded" : index === completeThrough + 1 ? "Next handoff" : "Waiting"}</small>
-            </div>;
-          })}
-        </div>
-        <footer><span>Submitted facts, sourced research, AI advice, and human decisions remain separate.</span>
-          <button type="button" onClick={() => open(role === "reviewer" ? "reviews" : role === "speaker" ? "submissions" : "proposals")}>Open record <ArrowRight size={14} /></button></footer>
+        {traceResource.loading ? <header><div><p className="eyebrow">One record trace</p><h2>Loading the program record…</h2></div></header> : null}
+        {!traceResource.loading && !trace ? <header><div><p className="eyebrow">One record trace</p><h2>No record has reached the public program yet</h2>
+          <p className="record-empty">{traceResource.data?.reason ?? "A proposal appears here once it is accepted, scheduled, and published."}</p></div></header> : null}
+        {trace ? <>
+          <header>
+            <div>
+              <p className="eyebrow">One record trace{trace.trackName ? ` · ${trace.trackName}` : ""}</p>
+              <h2>{trace.title}</h2>
+              <p className="record-subject">{trace.speakerName ? `Submitted by ${trace.speakerName}` : null}</p>
+            </div>
+            <span className="status-chip">{trace.completeStages} of {trace.stages.length} recorded</span>
+          </header>
+          <div className="record-flow" role="tablist" aria-label="Program record lifecycle">
+            {trace.stages.map((stage, index) => <button
+              type="button"
+              key={stage.key}
+              role="tab"
+              id={`trace-tab-${stage.key}`}
+              aria-selected={selectedKey === stage.key}
+              aria-controls="trace-evidence"
+              className={`${stage.complete ? "complete" : "pending"} ${selectedKey === stage.key ? "selected" : ""}`}
+              onClick={() => setSelectedKey(stage.key)}
+            >
+              <span>{stage.complete ? <Check size={12} /> : index + 1}</span>
+              <strong>{stage.label}</strong>
+              <small>{stage.complete ? railStamp(stage.occurredAt) ?? "Recorded" : "Not recorded"}</small>
+            </button>)}
+          </div>
+          {selected ? <StageEvidence stage={selected} open={open} /> : null}
+        </> : null}
       </article>
       <article className="attention-panel">
-        <header><p className="eyebrow">Needs attention</p><h2>{role === "organizer" ? "Three decisions before publishing" : role === "reviewer" ? "One review remains" : "One task remains"}</h2></header>
+        <header><p className="eyebrow">Needs attention</p>
+          <h2>{incompleteStages.length + (openTasks > 0 ? 1 : 0) === 0 ? "Nothing outstanding" : "Outstanding in this event"}</h2></header>
         <ul>
-          {role === "organizer" ? <>
-            <li><CircleAlert size={16} /><span><strong>1 proposal unassigned</strong><small>Capacity is available; auto-assign is ready.</small></span></li>
-            <li><CircleAlert size={16} /><span><strong>Slides due May 1</strong><small>One file request remains incomplete.</small></span></li>
-            <li><CircleAlert size={16} /><span><strong>Draft schedule unpublished</strong><small>The current public revision stays untouched.</small></span></li>
-          </> : role === "reviewer" ?
-            <li><ClipboardCheck size={16} /><span><strong>Taming 40-Minute CI</strong><small>Strong expertise match · due October 15.</small></span></li> :
-            <li><FileText size={16} /><span><strong>Upload final slides</strong><small>PDF, PPT, or PPTX · due May 1, 2027.</small></span></li>}
+          {openTasks > 0 ? <li><ClipboardCheck size={16} /><span>
+            <strong>{openTasks} speaker task{openTasks === 1 ? "" : "s"} open</strong>
+            <small>Counted from required deliverables in this event.</small></span></li> : null}
+          {incompleteStages.map((stage) => <li key={stage.key}><CircleAlert size={16} /><span>
+            <strong>{stage.label} has no recorded evidence</strong>
+            <small>{stage.evidence}</small></span></li>)}
+          {openTasks === 0 && incompleteStages.length === 0 ? <li><FileText size={16} /><span>
+            <strong>Every stage carries a receipt</strong>
+            <small>Each lifecycle step on this record resolves to a persisted row.</small></span></li> : null}
         </ul>
       </article>
     </section>
   </>;
+}
+
+function StageEvidence({ stage, open }: { stage: TraceStage; open: (section: string) => void }) {
+  return <section className="trace-evidence" id="trace-evidence" role="tabpanel" aria-labelledby={`trace-tab-${stage.key}`}>
+    <div className="trace-evidence-head">
+      <div><p className="eyebrow">{stage.label}</p><p className="trace-claim">{stage.evidence}</p></div>
+      <span className={stage.complete ? "status-chip" : "status-chip status-chip-quiet"}>{stage.complete ? "Recorded" : "Not recorded"}</span>
+    </div>
+    <dl className="trace-facts">
+      <div><dt>Who</dt><dd>{stage.actorName ? `${stage.actorName}${stage.actorRole ? ` · ${stage.actorRole}` : ""}` : "No actor recorded"}</dd></div>
+      <div><dt>When</dt><dd>{stamp(stage.occurredAt) ?? "No timestamp recorded"}</dd></div>
+      <div><dt>Receipt</dt><dd>{stage.receiptId
+        ? <code title={stage.receiptId}>{stage.receiptType} · {shortReceipt(stage.receiptId)}</code>
+        : "No row to cite"}</dd></div>
+    </dl>
+    <p className="trace-rule"><strong>Rule</strong> {stage.rule}</p>
+    <footer>
+      <span>{stage.complete ? "Open the surface holding this record." : "The destination exists; this stage has no record yet."}</span>
+      <button type="button" onClick={() => open(stage.section)}>Open {stage.destination} <ArrowRight size={14} /></button>
+    </footer>
+  </section>;
 }

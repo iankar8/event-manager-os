@@ -437,34 +437,60 @@
 
 .record-flow {
   display: grid;
-  grid-template-columns: repeat(7, minmax(5.5rem, 1fr));
+  /* Fits all seven steps at desktop width; the narrow-screen rule below trades
+     that for a minimum column width and lets the rail scroll on its own. */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0 var(--space-sm);
   overflow-x: auto;
   padding: var(--space-lg);
 }
 
-.record-flow > div {
+@media (max-width: 75rem) {
+  .record-flow {
+    grid-template-columns: repeat(7, minmax(5rem, 1fr));
+  }
+}
+
+.record-flow > button {
   display: grid;
   grid-template-rows: 1.75rem auto auto;
   gap: var(--space-xs);
   position: relative;
+  padding: 0 var(--space-xs) 0 0;
   color: var(--color-muted);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
-.record-flow > div::after {
+.record-flow > button::after {
   content: "";
   position: absolute;
   top: 0.7rem;
-  right: 0;
+  /* Bridge the column gap so the rail reads as one continuous line. */
+  right: calc(var(--space-sm) * -1);
   left: 1.55rem;
   height: 1px;
   background: var(--color-rule-strong);
 }
 
-.record-flow > div:last-child::after {
+.record-flow > button strong {
+  font-size: var(--text-xs);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.record-flow > button small {
+  font-size: var(--text-xs);
+}
+
+.record-flow > button:last-child::after {
   display: none;
 }
 
-.record-flow > div > span {
+.record-flow > button > span {
   z-index: 1;
   display: grid;
   width: 1.5rem;
@@ -476,16 +502,142 @@
   font-size: var(--text-xs);
 }
 
-.record-flow > div.complete > span,
-.record-flow > div.current > span {
+.record-flow > button.complete > span {
   color: var(--color-accent-ink);
   background: var(--color-accent);
   border-color: var(--color-accent);
 }
 
-.record-flow > div.complete,
-.record-flow > div.current {
+.record-flow > button.complete {
   color: var(--color-ink);
+}
+
+.record-flow > button.selected {
+  color: var(--color-ink);
+}
+
+.record-flow > button.selected > span {
+  box-shadow: 0 0 0 3px var(--color-paper-2), 0 0 0 4px var(--color-accent);
+}
+
+.record-flow > button.pending > span {
+  border-style: dashed;
+}
+
+.record-flow > button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.trace-evidence {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-top: 1px solid var(--color-rule);
+}
+
+.trace-evidence-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.trace-claim {
+  margin-top: var(--space-2xs, 0.25rem);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+}
+
+.trace-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+}
+
+.trace-facts dt {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.trace-facts dd {
+  margin: var(--space-2xs, 0.25rem) 0 0;
+  font-size: var(--text-sm);
+}
+
+.trace-facts code {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0.1rem 0.35rem;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.trace-rule {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.trace-rule strong {
+  color: var(--color-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: var(--space-xs);
+}
+
+.trace-evidence footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-rule);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.trace-evidence footer button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-accent);
+  background: transparent;
+  border: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-chip-quiet {
+  color: var(--color-muted);
+  background: var(--color-paper-2);
+}
+
+.record-subject,
+.record-empty {
+  margin-top: var(--space-2xs, 0.25rem);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 60rem) {
+  .trace-evidence-head {
+    flex-direction: column;
+  }
+
+  .trace-evidence footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .record-panel footer {

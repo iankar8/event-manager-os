@@ -22,8 +22,10 @@ The password accounts use the same persisted role and event boundaries as real a
 ### 0:00–0:25 — the thesis
 
 1. Open the live URL and choose **Explore demo**.
-2. On **Overview**, use the **One record trace** to establish the core model: `Submitted → Reviewed → Accepted → Onboarding → Approved → Scheduled → Published`.
-3. Point out **Needs attention**: the system names the missing assignment, speaker deliverable, and unpublished draft instead of hiding them in separate modules.
+2. On **Overview**, the **One record trace** follows a single proposal through `Submitted → Reviewed → Accepted → Onboarding → Approved → Scheduled → Published`.
+3. Click any step. Each one names the actor and role, the timestamp, the server rule that governed the transition, and the **database row id** that is the receipt for the claim — a proposal id, a review id, a decision id, a schedule item, a published revision. Nothing on this panel is asserted by the interface; it is read back from the rows through an organizer-scoped, event-scoped endpoint.
+4. Use **Open …** on any step to land on the product surface holding that record, and confirm the id matches.
+5. **Needs attention** is derived the same way: outstanding speaker deliverables and any stage lacking evidence. A stage with no record says so rather than filling itself in.
 
 ### 0:25–1:05 — review and decision handoff
 

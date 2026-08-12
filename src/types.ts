@@ -22,3 +22,30 @@ export type WorkspaceContext = {
   };
   personas: { role: Role; name: string }[];
 };
+
+export type TraceStage = {
+  key: "submitted" | "reviewed" | "accepted" | "onboarding" | "approved" | "scheduled" | "published";
+  label: string;
+  complete: boolean;
+  actorName: string | null;
+  actorRole: string | null;
+  occurredAt: string | null;
+  evidence: string;
+  rule: string;
+  receiptType: string | null;
+  receiptId: string | null;
+  destination: string;
+  section: string;
+};
+
+export type ProofTrace = {
+  proposalId: string;
+  sessionId: string;
+  title: string;
+  trackName: string | null;
+  speakerName: string | null;
+  completeStages: number;
+  stages: TraceStage[];
+};
+
+export type TraceResponse = { trace: ProofTrace | null; reason?: string };

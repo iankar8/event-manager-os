@@ -17,7 +17,12 @@ export function ReviewPanel({ role }: { role: "organizer" | "reviewer" }) {
 
   useEffect(() => {
     if (!roundId && resource.data?.rounds[0]) setRoundId(String(resource.data.rounds[0].id));
-    if (!selectedAssignment && role === "reviewer" && resource.data?.assignments[0]) setSelectedAssignment(String(resource.data.assignments[0].id));
+    // Open on outstanding work rather than whichever assignment sorts first, so a
+    // reviewer with a completed review still lands on the one that needs them.
+    if (!selectedAssignment && role === "reviewer" && resource.data?.assignments.length) {
+      const next = resource.data.assignments.find((item) => item.status !== "submitted") ?? resource.data.assignments[0];
+      setSelectedAssignment(String(next.id));
+    }
   }, [resource.data, role, roundId, selectedAssignment]);
 
   const activeRound = resource.data?.rounds.find((round) => round.id === roundId);

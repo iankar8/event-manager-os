@@ -30,6 +30,44 @@ try {
   });
   const unassignedProposal = organizerProposals.proposals.find((proposal) => proposal.title.startsWith("Docs That Answer Back"));
   assert.ok(unassignedProposal, "Organizer should see the unassigned fixture proposal");
+
+  // The lifecycle trace is the first thing a reader sees, so it has to be derived
+  // from persisted rows rather than asserted by the UI.
+  const traceResponse = await page.evaluate(async () => (await fetch("/api/context/trace")).json());
+  const traceStages = traceResponse.trace.stages;
+  assert.equal(traceStages.length, 7, "The trace must cover all seven lifecycle stages");
+  assert.equal(traceStages.every((stage) => stage.complete), true,
+    `Every stage of the canonical record must carry persisted evidence: ${JSON.stringify(traceStages.filter((stage) => !stage.complete))}`);
+  assert.equal(traceStages.every((stage) => stage.receiptId && stage.actorName && stage.occurredAt), true,
+    "Each recorded stage must cite a real row id, an actor, and a timestamp");
+  const traceTimestamps = traceStages.map((stage) => Date.parse(stage.occurredAt));
+  assert.deepEqual(traceTimestamps, [...traceTimestamps].sort((a, b) => a - b),
+    "Lifecycle evidence must be chronologically ordered, not stamped at one instant");
+  const reviewedStage = traceStages.find((stage) => stage.key === "reviewed");
+  assert.ok(reviewedStage.receiptId, "The published record must have a submitted review behind its acceptance");
+  const proposalIdsInTrace = new Set(traceStages.map((stage) => stage.receiptId));
+  assert.equal(proposalIdsInTrace.has(unassignedProposal.id), false,
+    "The trace must not mix in records from a different proposal");
+
+  const organizerSections = new Set(["proposals", "reviews", "people", "resources", "tasks", "content", "schedule", "communications", "integrations", "publish", "settings"]);
+  assert.deepEqual(traceStages.map((stage) => stage.section).filter((section) => !organizerSections.has(section)), [],
+    "Every trace stage must point at a real organizer surface");
+  await page.getByRole("tab", { name: /Onboarding/ }).click();
+  await page.getByRole("button", { name: /Open Deliverables/ }).click();
+  await page.getByRole("heading", { name: "Deliverables pipeline" }).waitFor();
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await page.getByRole("heading", { name: "Program command center" }).waitFor();
+
+  const otherDemoContext = await browser.newContext();
+  const otherDemoPage = await otherDemoContext.newPage();
+  await otherDemoPage.goto(`${baseURL}/demo`);
+  await otherDemoPage.getByRole("heading", { name: "Program command center" }).waitFor();
+  const otherTrace = await otherDemoPage.evaluate(async () => (await fetch("/api/context/trace")).json());
+  assert.notEqual(otherTrace.trace.proposalId, traceResponse.trace.proposalId,
+    "Each isolated demo event must trace its own proposal");
+  assert.deepEqual(otherTrace.trace.stages.map((stage) => stage.receiptId).filter((id) => proposalIdsInTrace.has(id)), [],
+    "A trace must never expose row ids belonging to another event");
+  await otherDemoContext.close();
   const formSetup = await page.evaluate(async () => {
     const [workspaceResponse, fieldResponse] = await Promise.all([
       fetch("/api/context"),
@@ -136,10 +174,15 @@ try {
   const reviewerBoundaries = await page.evaluate(async (proposalId) => {
     const hidden = await fetch(`/api/proposals/${proposalId}`);
     const sync = await fetch("/api/integrations/accelevents/preview", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-    return { hidden: hidden.status, sync: sync.status };
+    const trace = await fetch("/api/context/trace");
+    return { hidden: hidden.status, sync: sync.status, trace: trace.status };
   }, unassignedProposal.id);
   assert.equal(reviewerBoundaries.hidden, 404, "Reviewer must not read an unassigned proposal through the API");
   assert.equal(reviewerBoundaries.sync, 403, "Reviewers must not inspect or trigger organizer integration state");
+  assert.equal(reviewerBoundaries.trace, 403, "Reviewers must not read the organizer record trace");
+  // Select the outstanding assignment explicitly; the queue also holds a completed
+  // review, and depending on sort order for the default selection is brittle.
+  await page.getByRole("button", { name: /Taming 40-Minute CI/ }).click();
   await page.getByRole("combobox", { name: /Recommendation/ }).selectOption({ label: "Accept" });
   await page.getByRole("textbox", { name: /Comments/ }).fill("Strong practical content and a clear narrative arc; abstract could name the specific tooling used. Recommend accept for the Platform track.");
   await page.getByRole("button", { name: "Submit review", exact: true }).click();
@@ -151,7 +194,7 @@ try {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ values }),
     });
     return { status: response.status, body: await response.json() };
-  }, { assignmentId: reviewerData.assignments[0].id, criteria: reviewerData.criteria });
+  }, { assignmentId: reviewerData.assignments.find((item) => String(item.title).startsWith("Taming 40-Minute CI")).id, criteria: reviewerData.criteria });
   assert.equal(resubmission.status, 200, `Review resubmission should update the canonical review: ${JSON.stringify(resubmission.body)}`);
 
   await page.getByRole("button", { name: "Organizer", exact: true }).click();
