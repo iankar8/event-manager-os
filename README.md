@@ -28,7 +28,9 @@ Sign in as a specific persona instead (password login, no inbox required):
 | Reviewer | `sbek-reviewer@example.com` | `SbekTest!2027-rev` |
 | Speaker | `sbek-speaker@example.com` | `SbekTest!2027-spk` |
 
-**What this build does not claim:** application email is written to an outbox and never delivered externally, and the Accelevents integration applies against a deterministic local mirror rather than a live account. Both report their delivery mode explicitly.
+**What this build does and does not claim.** Application email is written to an outbox and is never delivered externally — no mail provider is wired, and nothing in the UI says otherwise.
+
+The Accelevents integration is written against the real REST API (`api.accelevents.com`) — create and update with stable external identities and surfaced failures — but it has **never been verified against a live Accelevents account**, because API access requires their Enterprise or White Label plan. Everything demonstrated here runs in `outbox` mode: each approved apply writes to a deterministic local mirror and records a receipt. `ACCELEVENTS_SYNC_MODE=live` exists and is untested. Their documented write API also has no confirmed speaker-to-session assignment operation, which the flow reports as a reconciliation warning rather than silently claiming success. Every receipt states which mode produced it.
 
 ## What works
 

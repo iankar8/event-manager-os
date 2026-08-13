@@ -255,7 +255,7 @@ export async function seedProgramWorkspace(
       eventId,
       proposalAi,
       "Your AI Pair Programmer Is Lying to You: Verification Patterns That Scale",
-      "Code generation is easy; trusting it is hard. Learn practical verification patterns backed by production experience.",
+      "Code generation is easy; trusting it is hard. This session walks through the verification patterns that hold up in production: property tests that survive refactors, mutation coverage that finds the assertions you forgot, snapshot judges for output you cannot diff by hand, and the CI gates that tie them together. Drawn from a 200-engineer codebase and the three approaches that failed before these worked.",
       trackAi,
       formatTalk,
     ),

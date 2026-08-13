@@ -48,7 +48,7 @@ The password accounts use the same persisted role and event boundaries as real a
 ### 2:20–3:00 — replacement credibility
 
 1. Open **Communications** to preview recipients, merge data, exclusions, attachments, and outbox receipts without claiming a real send.
-2. Open **Integrations → Accelevents handoff**. The first approved simulation records speaker/session creates; an unchanged second preview produces zero mutations, and deletions become reconciliation warnings.
+2. Open **Integrations → Accelevents handoff**. The sync is written against the real Accelevents REST API but has never been verified against a live account — their API requires an Enterprise or White Label plan — so everything here runs in `outbox` mode against a deterministic local mirror. The first approved apply records speaker/session creates, an unchanged second preview produces zero mutations, and removals become reconciliation warnings rather than silent deletions. Each receipt states which mode produced it.
 3. Open `/api/v1/openapi.json` to show the versioned public contract. Finish on the Accelevents receipt: every outgoing change carries its source revision, exact scope, payload, actor, outcome, and stable destination identity.
 
 ## Verification receipt
