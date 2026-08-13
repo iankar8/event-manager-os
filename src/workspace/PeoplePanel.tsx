@@ -61,7 +61,8 @@ export function PeoplePanel({ role, mode = "people" }: { role: "organizer" | "sp
           {task.description ? <p>{task.description}</p> : null}
           {task.task_type === "file_request" ? <p className="constraint-copy">Accepted: {task.accepted_types ?? "event files"} · Maximum {Math.round(Number(task.max_file_bytes ?? 0) / 1_048_576)} MB · {task.version_count} version{Number(task.version_count) === 1 ? "" : "s"}</p> : null}</div>
         <div className="task-actions"><StatusChip value={task.status} />{role === "speaker" && task.task_type === "file_request" ? <label className="button button-quiet button-small"><Upload size={14} /> Upload new version<input className="visually-hidden" type="file" accept={task.accepted_types ?? undefined} onChange={(event) => event.target.files?.[0] && uploadTask(String(task.id), event.target.files[0])} /></label> : null}
-          {role === "speaker" && task.task_type !== "file_request" && task.status !== "complete" ? <button className="button button-quiet button-small" onClick={() => run(`/api/speakers/tasks/${task.id}/complete`)}>Mark complete</button> : null}</div></article>)}</div>
+          {role === "speaker" && task.task_type !== "file_request" && task.status !== "complete" ? <button className="button button-quiet button-small" onClick={() => run(`/api/speakers/tasks/${task.id}/complete`)}>Mark complete</button> : null}
+          {task.status === "complete" ? <button className="button button-quiet button-small" onClick={() => run(`/api/speakers/tasks/${task.id}/reopen`)}>Reopen</button> : null}</div></article>)}</div>
     </section>
     <section className="panel-card"><header className="section-toolbar"><div><p className="eyebrow">File library</p><h2>All versions stay attached to their task</h2></div><FileArchive size={18} /></header>
       {resource.data.files.length ? <div className="file-list">{resource.data.files.map((file) => <FileRecord key={String(file.id)} file={file} comments={(resource.data?.comments ?? []).filter((comment) => comment.file_id === file.id)} onAdded={async (text) => { setMessage(text); await resource.reload(); }} />)}</div> : <EmptyBlock title="No task deliverables yet">Files uploaded against a deliverable request appear here with version metadata. Profile photos are held on the speaker record and are listed below.</EmptyBlock>}
@@ -117,6 +118,9 @@ function SpeakerProfile({ speaker, sessions, organizer = false, onSaved, message
   const [headshotUrl, setHeadshotUrl] = useState(String(speaker?.headshot_url ?? ""));
   const [workflowStatus, setWorkflowStatus] = useState(String(speaker?.workflow_status ?? "active"));
   const [organizerNote, setOrganizerNote] = useState(String(speaker?.organizer_note ?? ""));
+  const [travelPreferences, setTravelPreferences] = useState(String(speaker?.travel_preferences ?? ""));
+  const [dietaryPreferences, setDietaryPreferences] = useState(String(speaker?.dietary_preferences ?? ""));
+  const [tshirtSize, setTshirtSize] = useState(String(speaker?.tshirt_size ?? ""));
   useEffect(() => {
     setBio(String(speaker?.bio ?? ""));
     setTwitter(String(speaker?.twitter ?? ""));
@@ -124,6 +128,9 @@ function SpeakerProfile({ speaker, sessions, organizer = false, onSaved, message
     setHeadshotUrl(String(speaker?.headshot_url ?? ""));
     setWorkflowStatus(String(speaker?.workflow_status ?? "active"));
     setOrganizerNote(String(speaker?.organizer_note ?? ""));
+    setTravelPreferences(String(speaker?.travel_preferences ?? ""));
+    setDietaryPreferences(String(speaker?.dietary_preferences ?? ""));
+    setTshirtSize(String(speaker?.tshirt_size ?? ""));
   }, [speaker]);
   async function readHeadshot(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -137,7 +144,7 @@ function SpeakerProfile({ speaker, sessions, organizer = false, onSaved, message
   async function submit(event: FormEvent) {
     event.preventDefault();
     const result = await apiRequest<{ message: string }>(`/api/speakers/${speaker.id}`, { method: "PATCH",
-      body: JSON.stringify({ bio, twitter, linkedinUrl, headshotUrl,
+      body: JSON.stringify({ bio, twitter, linkedinUrl, headshotUrl, travelPreferences, dietaryPreferences, tshirtSize,
         ...(organizer ? { workflowStatus, organizerNote } : {}) }) });
     setEditing(false); onSaved(result.message);
   }
@@ -148,6 +155,9 @@ function SpeakerProfile({ speaker, sessions, organizer = false, onSaved, message
     {editing ? <form className="stack-form" onSubmit={submit}><label>Biography<textarea rows={6} value={bio} onChange={(event) => setBio(event.target.value)} /></label>
       <label>Social handle<input value={twitter} onChange={(event) => setTwitter(event.target.value)} /></label><label>LinkedIn URL<input type="url" value={linkedinUrl} onChange={(event) => setLinkedin(event.target.value)} /></label>
       <label>Profile photo<input type="file" accept="image/png,image/jpeg,image/webp" onChange={readHeadshot} /></label>
+      <label>Travel preferences<input value={travelPreferences} onChange={(event) => setTravelPreferences(event.target.value)} placeholder="Arrival timing, seating, accessibility needs" /></label>
+      <div className="two-field-row"><label>Dietary preferences<input value={dietaryPreferences} onChange={(event) => setDietaryPreferences(event.target.value)} /></label>
+        <label>T-shirt size<select value={tshirtSize} onChange={(event) => setTshirtSize(event.target.value)}><option value="">Not set</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>2XL</option></select></label></div>
       {headshotUrl ? <span className="avatar avatar-large profile-photo profile-photo-preview"><img src={headshotUrl} alt="New profile preview" /></span> : null}
       {organizer ? <><label>Workflow status<select value={workflowStatus} onChange={(event) => setWorkflowStatus(event.target.value)}><option value="active">Active</option><option value="invited">Invited</option><option value="confirmed">Confirmed</option><option value="declined">Declined</option></select></label>
         <label>Organizer note<textarea rows={3} value={organizerNote} onChange={(event) => setOrganizerNote(event.target.value)} /></label></> : null}

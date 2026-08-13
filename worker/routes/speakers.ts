@@ -142,6 +142,19 @@ speakers.post("/:speakerId/invite", async (context) => {
   return context.json({ ok: true, portalUrl, message: "Speaker portal invitation logged with a 14-day magic link." });
 });
 
+speakers.post("/tasks/:taskId/reopen", async (context) => {
+  const session = await requireSession(context);
+  if (!session) return context.json({ error: "Sign in to continue." }, 401);
+  // An accidental completion must be reversible by the speaker who owns the task
+  // or an organizer; a permanent Complete badge turns a misclick into false
+  // readiness data.
+  const result = await context.env.DB.prepare(
+    `UPDATE speaker_tasks SET status = 'incomplete', completed_at = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ? AND event_id = ? AND (? = 1 OR speaker_id = ?)`,
+  ).bind(context.req.param("taskId"), session.eventId, isOrganizer(session) ? 1 : 0, session.userId).run();
+  return result.meta.changes ? context.json({ ok: true, message: "Task reopened." }) : context.json({ error: "Task not found." }, 404);
+});
+
 speakers.patch("/:speakerId", async (context) => {
   const session = await requireSession(context);
   if (!session) return context.json({ error: "Sign in to continue." }, 401);
