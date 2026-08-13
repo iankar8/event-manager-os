@@ -1,4 +1,4 @@
-# Program Desk judge walkthrough
+# Event Manager OS judge walkthrough
 
 **Live application:** https://program-desk.ian-208.workers.dev
 

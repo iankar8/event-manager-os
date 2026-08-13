@@ -1,12 +1,12 @@
-# Program Desk
+# Event Manager OS (EMOS)
 
-Program Desk is an open-source conference program operations system built around one persisted record moving through:
+Event Manager OS is an open-source conference program operations system built around one persisted record moving through:
 
 `Submitted → Reviewed → Accepted → Onboarding → Approved → Scheduled → Published`
 
 It is a competition-ready alternative to the speaker and content workflow in SessionBoard. The product emphasizes the behavior an organizer has to trust: cross-role handoffs, explicit rules, event isolation, human/AI provenance, schedule revisions, and attendee-facing output that reads from the same approved data.
 
-![Program Desk organizer workspace](docs/qa/2026-08-11-workbench-desktop-real.png)
+![Event Manager OS organizer workspace](docs/qa/2026-08-11-workbench-desktop-real.png)
 
 **Live evaluator build:** [program-desk.ian-208.workers.dev](https://program-desk.ian-208.workers.dev)
 
@@ -90,7 +90,7 @@ POST /api/integrations/accelevents/preview
 POST /api/integrations/accelevents/runs/:runId/apply  { "confirm": true }
 ```
 
-Only approved sessions in the current published schedule and their assigned speakers enter a preview. Speaker and session creates/updates use stable Program Desk-to-Accelevents receipts. Removed or unpublished source records become reconciliation warnings; Program Desk never silently deletes the Accelevents copy. The currently documented Accelevents write API does not expose a confirmed speaker-to-session assignment operation, so the preview labels that destination-side check instead of pretending the handoff is complete.
+Only approved sessions in the current published schedule and their assigned speakers enter a preview. Speaker and session creates/updates use stable Event Manager OS-to-Accelevents receipts. Removed or unpublished source records become reconciliation warnings; Event Manager OS never silently deletes the Accelevents copy. The currently documented Accelevents write API does not expose a confirmed speaker-to-session assignment operation, so the preview labels that destination-side check instead of pretending the handoff is complete.
 
 ## Verification
 
@@ -118,7 +118,7 @@ The latest `killmysaas-evals` harness was also validated locally with its offlin
 
 ## Architecture
 
-Program Desk is a Cloudflare-native React application:
+Event Manager OS is a Cloudflare-native React application:
 
 - React 19 and Vite render the organizer, reviewer, speaker, and public surfaces.
 - A Hono Worker owns auth, role/event scoping, rules, and application APIs.

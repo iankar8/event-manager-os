@@ -14,7 +14,7 @@ function testBindings(databaseResult: { ok: number } | null = { ok: 1 }) {
   };
 }
 
-describe("Program Desk API boundary", () => {
+describe("Event Manager OS API boundary", () => {
   it("reports a healthy persisted service", async () => {
     const response = await app.request("/api/health", undefined, testBindings());
     const body = await response.json();

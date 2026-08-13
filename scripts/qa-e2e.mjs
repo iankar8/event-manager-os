@@ -351,7 +351,7 @@ try {
   for (const version of [1, 2]) {
     const uploadStatus = await page.evaluate(async ({ taskId, fileVersion }) => {
       const data = new FormData();
-      data.append("file", new File([`%PDF-1.4 Program Desk fixture version ${fileVersion}`], `slides-v${fileVersion}.pdf`, { type: "application/pdf" }));
+      data.append("file", new File([`%PDF-1.4 Event Manager OS fixture version ${fileVersion}`], `slides-v${fileVersion}.pdf`, { type: "application/pdf" }));
       return (await fetch(`/api/speakers/tasks/${taskId}/upload`, { method: "POST", body: data })).status;
     }, { taskId: slideTask.id, fileVersion: version });
     assert.equal(uploadStatus, 200, `Deliverable upload version ${version} should succeed`);
@@ -442,7 +442,7 @@ try {
   const unexpectedErrors = browserErrors.filter((message) => !/status of (?:400|403|404|409)\b/.test(message)
     && !/Permissions policy violation/.test(message));
   assert.deepEqual(unexpectedErrors, [], `Browser console errors: ${unexpectedErrors.join(" | ")}`);
-  console.log("Program Desk E2E: role scoping, speaker resources, API contract, safe Accelevents round trip, acceptance handoff, public surfaces, and mobile navigation passed.");
+  console.log("Event Manager OS E2E: role scoping, speaker resources, API contract, safe Accelevents round trip, acceptance handoff, public surfaces, and mobile navigation passed.");
 } finally {
   await context.close();
   await browser.close();

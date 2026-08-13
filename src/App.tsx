@@ -21,7 +21,7 @@ function Landing() {
     <main className="landing-shell">
       <nav className="landing-nav" aria-label="Primary navigation">
         <Link className="wordmark" to="/">
-          Program Desk
+          Event Manager OS
         </Link>
         <div className="nav-actions">
           <Link className="button button-quiet" to="/login">

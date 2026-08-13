@@ -18,6 +18,6 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     },
   });
   const payload = (await response.json().catch(() => ({}))) as T & { error?: string };
-  if (!response.ok) throw new ApiError(payload.error ?? "Program Desk could not complete that request.", response.status);
+  if (!response.ok) throw new ApiError(payload.error ?? "Event Manager OS could not complete that request.", response.status);
   return payload;
 }

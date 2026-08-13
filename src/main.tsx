@@ -13,7 +13,7 @@ import "./public.css";
 const root = document.getElementById("root");
 
 if (!root) {
-  throw new Error("Program Desk could not find its application root.");
+  throw new Error("Event Manager OS could not find its application root.");
 }
 
 createRoot(root).render(

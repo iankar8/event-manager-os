@@ -9,7 +9,7 @@ apiV1.use("*", cors({ origin: "*", allowMethods: ["GET", "OPTIONS"] }));
 const openapi = {
   openapi: "3.1.0",
   info: {
-    title: "Program Desk Public API",
+    title: "Event Manager OS Public API",
     version: "1.0.0",
     description: "Event-scoped, read-only access to the same approved records used by the public program.",
   },
@@ -138,7 +138,7 @@ apiV1.get("/events/:slug/agenda.ics", async (context) => {
   const event = await publishedEvent(context.env.DB, context.req.param("slug"));
   if (!event) return context.json(error("event_not_found", "Published event not found."), 404);
   const sessions = await publishedSessions(context.env.DB, String(event.id));
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Program Desk//Public API v1//EN",
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Event Manager OS//Public API v1//EN",
     `X-WR-CALNAME:${icalEscape(event.name)}`];
   for (const item of sessions.results) lines.push("BEGIN:VEVENT", `UID:${item.id}@programdesk`,
     `DTSTAMP:${icalStamp(item.updated_at)}`, `DTSTART:${icalStamp(item.starts_at)}`, `DTEND:${icalStamp(item.ends_at)}`,

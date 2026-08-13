@@ -91,7 +91,7 @@ auth.post("/magic-link", async (context) => {
     context.env.DB.prepare(
       `INSERT INTO communications
         (id, event_id, related_type, related_id, recipient_email, subject, body, status, sent_at)
-       VALUES (?, ?, 'auth', ?, ?, 'Your Program Desk sign-in link', ?, 'sent', CURRENT_TIMESTAMP)`,
+       VALUES (?, ?, 'auth', ?, ?, 'Your Event Manager OS sign-in link', ?, 'sent', CURRENT_TIMESTAMP)`,
     ).bind(
       createId("com"),
       membership.event_id,

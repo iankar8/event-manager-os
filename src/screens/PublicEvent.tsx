@@ -17,7 +17,7 @@ export function PublicEvent() {
   if (resource.error) return <ErrorBlock message={resource.error} />;
   if (!resource.data) return null;
   return <div className="public-shell">
-    <header className="public-header"><div className="public-brand"><Link className="wordmark" to="/">Program Desk</Link><span /><Link to={`/events/${slug}/agenda`}><strong>{resource.data.event.name}</strong><small>{formatDate(resource.data.event.starts_on)}–{formatDate(resource.data.event.ends_on)} · {resource.data.event.location}</small></Link></div>
+    <header className="public-header"><div className="public-brand"><Link className="wordmark" to="/">Event Manager OS</Link><span /><Link to={`/events/${slug}/agenda`}><strong>{resource.data.event.name}</strong><small>{formatDate(resource.data.event.starts_on)}–{formatDate(resource.data.event.ends_on)} · {resource.data.event.location}</small></Link></div>
       <Link className="button button-quiet button-small" to="/login">Organizer / participant sign in</Link></header>
     <nav className="public-nav" aria-label="Public event pages">{publicNav.map(([id, label]) => <button key={id} aria-current={surface === id ? "page" : undefined} onClick={() => navigate(`/events/${slug}/${id}`)}>{label}</button>)}</nav>
     <main className="public-main">
@@ -28,7 +28,7 @@ export function PublicEvent() {
       {surface === "agenda" ? <AgendaSurface data={resource.data} /> : null}
       {surface === "itinerary" ? <ItinerarySurface data={resource.data} slug={slug} /> : null}
     </main>
-    <footer className="public-footer"><span>Published from one approved Program Desk record.</span><Link to="/">Powered by Program Desk <ExternalLink size={12} /></Link></footer>
+    <footer className="public-footer"><span>Published from one approved Event Manager OS record.</span><Link to="/">Powered by Event Manager OS <ExternalLink size={12} /></Link></footer>
   </div>;
 }
 

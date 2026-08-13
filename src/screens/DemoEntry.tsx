@@ -20,7 +20,7 @@ export function DemoEntry() {
   return (
     <main className="entry-shell">
       <Link className="wordmark" to="/">
-        Program Desk
+        Event Manager OS
       </Link>
       <section className="entry-card" aria-live="polite">
         <LoaderCircle className="spinner" size={24} aria-hidden="true" />

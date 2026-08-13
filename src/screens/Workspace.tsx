@@ -126,7 +126,7 @@ export function Workspace() {
     {data.session.isDemo ? <div className="demo-banner"><span><Sparkles size={14} /> Demo workspace · changes persist in this isolated event</span><button type="button" disabled={pending} onClick={resetDemo}>Reset demo</button></div> : null}
     <header className="app-topbar">
       <div className="brand-cluster"><button className="mobile-menu-button" onClick={() => setMobileNav((value) => !value)} aria-label="Open workspace navigation"><Menu size={18} /></button>
-        <Link className="wordmark" to="/app">Program Desk</Link><span className="topbar-rule" />
+        <Link className="wordmark" to="/app">Event Manager OS</Link><span className="topbar-rule" />
         {role === "organizer" && events.length > 1 ? <select className="event-switcher" aria-label="Active event" value={data.session.eventId} onChange={(event) => switchEvent(event.target.value)}>{events.map((event) => <option value={event.id} key={event.id}>{event.name}</option>)}</select> : <span className="event-label">{data.session.eventName}</span>}</div>
       <div className="topbar-actions">{data.session.isDemo ? <div className="role-control" aria-label="Demo persona">{(["organizer", "reviewer", "speaker"] as const).map((persona) => <button key={persona} type="button" disabled={pending} aria-pressed={role === persona} onClick={() => switchRole(persona)}>{persona[0].toUpperCase() + persona.slice(1)}</button>)}</div> : null}
         <button className="identity-button" type="button"><span className="avatar">{data.session.name.split(" ").map((part) => part[0]).join("")}</span><span><strong>{data.session.name}</strong><small>{role}</small></span><ChevronDown size={14} /></button></div>

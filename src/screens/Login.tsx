@@ -49,7 +49,7 @@ export function Login() {
     <main className="auth-shell">
       <section className="auth-intro">
         <Link className="wordmark" to="/">
-          Program Desk
+          Event Manager OS
         </Link>
         <div>
           <p className="eyebrow">One record. Every handoff.</p>

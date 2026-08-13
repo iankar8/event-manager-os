@@ -1,4 +1,4 @@
-# Program Desk — Claude Handoff
+# Event Manager OS — Claude Handoff
 
 **Prepared:** August 12, 2026  
 **Repository:** `/Users/iankar/Documents/Codex/2026-08-09/hope-you-are-all-having-fun`  
@@ -14,7 +14,7 @@
 Paste this prompt into Claude from the repository root:
 
 ```text
-You are taking over Program Desk, an open-source SessionBoard alternative built for the killmysaas LLM-as-judge competition.
+You are taking over Event Manager OS, an open-source SessionBoard alternative built for the killmysaas LLM-as-judge competition.
 
 Read CLAUDE-HANDOFF.md completely before acting. Then read README.md, docs/JUDGE-WALKTHROUGH.md, docs/designs/2026-08-11-program-desk-product-spec.md, and docs/designs/2026-08-11-program-desk-v2-scope.md. Inspect git status and recent commits, then run pnpm check.
 
@@ -39,11 +39,11 @@ The submission deadline is immediate. A valid submission package is more importa
 
 ## 1. What this project is
 
-Program Desk is a conference program operations system. It is not a generic event CRM, ticketing system, or pixel clone of SessionBoard.
+Event Manager OS is a conference program operations system. It is not a generic event CRM, ticketing system, or pixel clone of SessionBoard.
 
 The product thesis is:
 
-> **Program Desk is the event-program system that proves every handoff.** One record moves from submission to review to speaker onboarding to agenda to public program, with rules enforced at every step.
+> **Event Manager OS is the event-program system that proves every handoff.** One record moves from submission to review to speaker onboarding to agenda to public program, with rules enforced at every step.
 
 The canonical lifecycle is:
 
@@ -169,7 +169,7 @@ Verified on August 12, 2026:
 - `main`, `origin/main`, and `origin/HEAD` all pointed to `cb2e5d0` before this handoff file was created.
 - The repository was clean before this handoff file was added.
 - Live root returned HTTP 200.
-- Live `/api/v1/openapi.json` returned the Program Desk OpenAPI 3.1 document.
+- Live `/api/v1/openapi.json` returned the Event Manager OS OpenAPI 3.1 document.
 - `pnpm check` passed:
   - TypeScript passed.
   - 3 Vitest files passed.
@@ -184,8 +184,8 @@ Recent commits:
 cb2e5d0 auto: 2026-08-11-2257               # proof-mode HTML demo + QA screenshots
 9cd309f feat: expose receipt-backed Accelevents handoff
 04ca58c Polish judge walkthrough
-088560f Deploy and verify Program Desk release
-97747b2 Release Program Desk competition build
+088560f Deploy and verify Event Manager OS release
+97747b2 Release Event Manager OS competition build
 ```
 
 The current live deployment predates the proof-mode production port because no production port exists yet.
@@ -379,7 +379,7 @@ The submission package should make the thesis legible in under 30 seconds.
 
 Recommended first-screen message:
 
-> **Program Desk proves every handoff from proposal to published program.**
+> **Event Manager OS proves every handoff from proposal to published program.**
 
 Then show four obvious links:
 
@@ -494,6 +494,6 @@ The phase is done when:
 
 **Do not archive** this project until the competition submission is confirmed and its final URLs/receipts are captured.
 
-**Do not extract** the proof-mode code into a generic framework. It is project-specific judgeability built around Program Desk's canonical record.
+**Do not extract** the proof-mode code into a generic framework. It is project-specific judgeability built around Event Manager OS's canonical record.
 
 The next bounded action is: show Ian the proof-mode demo, obtain production-port approval, then implement the truthful persisted trace—or, if the entry is not yet submitted, finish the valid submission first.

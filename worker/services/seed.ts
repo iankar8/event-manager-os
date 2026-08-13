@@ -305,7 +305,7 @@ export async function seedProgramWorkspace(
   ];
 
   for (const [templateKey, name, subject, body, mode] of [
-    ["submitter_confirmation", "Submitter confirmation", "We received your DevFlow Conf proposal", "Hi {speaker_name}, your proposal '{proposal_title}' is safely in Program Desk.", "immediate"],
+    ["submitter_confirmation", "Submitter confirmation", "We received your DevFlow Conf proposal", "Hi {speaker_name}, your proposal '{proposal_title}' is safely in Event Manager OS.", "immediate"],
     ["new_submission", "Internal new submission", "New proposal: {proposal_title}", "A new proposal is ready for the organizing team.", "daily_digest"],
     ["reviewer_invitation", "Reviewer invitation", "Join the DevFlow Conf program committee", "Review approximately {estimated_count} proposals by {deadline}.", "manual"],
     ["review_assignments", "Assignments ready", "Your DevFlow Conf reviews are ready", "You have {assignment_count} proposals due {deadline}.", "manual"],

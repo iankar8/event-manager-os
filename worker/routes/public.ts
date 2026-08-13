@@ -168,7 +168,7 @@ publicRoutes.post("/:slug/proposals", async (context) => {
          (id, event_id, related_type, related_id, recipient_email, subject, body, status, sent_at)
          VALUES (?, ?, 'submission_confirmation', ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
       ).bind(createId("com"), event.id, proposalId, session.email, `We received your ${event.name} proposal`,
-        `Hi ${session.name}, your proposal '${parsed.data.title}' is safely in Program Desk.`),
+        `Hi ${session.name}, your proposal '${parsed.data.title}' is safely in Event Manager OS.`),
       context.env.DB.prepare(
         `INSERT INTO communications
          (id, event_id, related_type, related_id, recipient_email, subject, body, status, sent_at)
