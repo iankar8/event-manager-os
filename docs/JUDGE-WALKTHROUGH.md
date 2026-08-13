@@ -54,5 +54,5 @@ The password accounts use the same persisted role and event boundaries as real a
 ## Verification receipt
 
 - TypeScript, six unit/API tests, and production build pass with `pnpm check`.
-- The cross-role Playwright suite passes against the deployed URL, including persistence, role scoping, conflicts, public surfaces, Speaker Resources, API isolation, and the safe Accelevents round trip.
-- The official `killmysaas-evals` offline browser smoke suite and six-area `--dry-run` validate without a paid judge call.
+- The cross-role Playwright suite passes, including persistence, role scoping, conflicts, public surfaces, Speaker Resources, API isolation, the lifecycle trace, and the safe Accelevents round trip. It runs against whichever URL is supplied; the recorded run is local.
+- The official `killmysaas-evals` harness scored this build at **88.1%** across five of six required areas. Public Widgets was never judged — the run exhausted its API credit before reaching it — so that area is unmeasured rather than passed, and the headline covers 80 of the 100 required points.

@@ -189,6 +189,10 @@ proposals.post("/", async (context) => {
 proposals.patch("/:proposalId", async (context) => {
   const session = await requireSession(context);
   if (!session) return context.json({ error: "Sign in to continue." }, 401);
+  // Reviewers are granted read on the proposals assigned to them; that must not
+  // become a write. A reviewer editing the abstract they are scoring would
+  // quietly rewrite the thing under evaluation.
+  if (session.role === "reviewer") return context.json({ error: "Reviewers cannot edit a proposal." }, 403);
   const proposalId = context.req.param("proposalId");
   if (!(await canReadProposal(context.env.DB, session, proposalId))) return context.json({ error: "Proposal not found." }, 404);
   const parsed = proposalInput.partial().safeParse(await context.req.json().catch(() => null));
@@ -311,6 +315,12 @@ proposals.post("/:proposalId/share", async (context) => {
   const body = z.object({ email: z.string().email(), canComment: z.boolean().default(true) })
     .safeParse(await context.req.json().catch(() => null));
   if (!body.success) return context.json({ error: "Enter a valid recipient email." }, 400);
+  // The share is stamped with the caller's event, so the proposal must actually
+  // belong to it — otherwise an organizer could mint a working public link for
+  // another organization's proposal.
+  const owned = await context.env.DB.prepare("SELECT 1 FROM proposals WHERE id = ? AND event_id = ?")
+    .bind(proposalId, session.eventId).first();
+  if (!owned) return context.json({ error: "Proposal not found." }, 404);
   const token = createToken();
   const expiresAt = new Date(Date.now() + 7 * 86_400_000).toISOString();
   await context.env.DB.prepare(

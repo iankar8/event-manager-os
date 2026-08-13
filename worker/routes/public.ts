@@ -209,9 +209,13 @@ publicRoutes.get("/:slug/feed/:widget", async (context) => {
   const feedSessions = selectedIds.size ? sessions.results.filter((item) => selectedIds.has(item.id)) : sessions.results;
   if (context.req.param("widget") === "itinerary" && context.req.query("format") === "ical") {
     const stamp = (value: string) => new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", `X-WR-CALNAME:${event.name}`];
-    feedSessions.forEach((item) => lines.push("BEGIN:VEVENT", `UID:${item.id}@programdesk`, `DTSTART:${stamp(item.starts_at)}`,
-      `DTEND:${stamp(item.ends_at)}`, `SUMMARY:${item.title}`, `LOCATION:${item.room}`, `DESCRIPTION:${item.description}`, "END:VEVENT"));
+    // Titles and descriptions routinely contain commas and semicolons, which end
+    // a property value in iCalendar; unescaped they produce a file a calendar
+    // app either mangles or refuses.
+    const esc = (value: unknown) => String(value ?? "").replaceAll("\\", "\\\\").replaceAll("\n", "\\n").replaceAll(",", "\\,").replaceAll(";", "\\;");
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", `X-WR-CALNAME:${esc(event.name)}`];
+    feedSessions.forEach((item) => lines.push("BEGIN:VEVENT", `UID:${item.id}@eventmanageros`, `DTSTART:${stamp(item.starts_at)}`,
+      `DTEND:${stamp(item.ends_at)}`, `SUMMARY:${esc(item.title)}`, `LOCATION:${esc(item.room)}`, `DESCRIPTION:${esc(item.description)}`, "END:VEVENT"));
     lines.push("END:VCALENDAR");
     return new Response(lines.join("\r\n"), { headers: { "content-type": "text/calendar",
       "content-disposition": `attachment; filename="${String(event.slug)}-itinerary.ics"` } });

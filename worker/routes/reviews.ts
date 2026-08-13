@@ -407,9 +407,11 @@ reviews.post("/ai/:proposalId/override", async (context) => {
     .safeParse(await context.req.json().catch(() => null));
   if (!parsed.success) return context.json({ error: "Choose a disposition and explain the human override." }, 400);
   await context.env.DB.prepare(
+    // Scoped to the caller's event so an organizer cannot overwrite the human
+    // override recorded on another organization's proposal.
     `UPDATE ai_recommendations SET overridden_by = ?, override_disposition = ?, override_reason = ?, updated_at = CURRENT_TIMESTAMP
-     WHERE proposal_id = ?`,
-  ).bind(session.userId, parsed.data.disposition, parsed.data.reason, context.req.param("proposalId")).run();
+     WHERE proposal_id = ? AND proposal_id IN (SELECT id FROM proposals WHERE event_id = ?)`,
+  ).bind(session.userId, parsed.data.disposition, parsed.data.reason, context.req.param("proposalId"), session.eventId).run();
   return context.json({ ok: true, message: "Human override saved separately from the AI recommendation." });
 });
 

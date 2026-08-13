@@ -355,8 +355,15 @@ speakers.post("/bulk-email", async (context) => {
     .safeParse(await context.req.json().catch(() => null));
   if (!parsed.success) return context.json({ error: "Choose speakers and add a subject and body." }, 400);
   const placeholders = parsed.data.speakerIds.map(() => "?").join(",");
-  const people = await context.env.DB.prepare(`SELECT id, name, email FROM users WHERE id IN (${placeholders})`)
-    .bind(...parsed.data.speakerIds).all<{ id: string; name: string; email: string }>();
+  // Recipients must be members of the caller's event. Selecting straight from
+  // users would let any id become a recipient, writing another event's people
+  // into this event's outbox.
+  const people = await context.env.DB.prepare(
+    `SELECT users.id, users.name, users.email FROM users
+     JOIN event_members ON event_members.user_id = users.id
+     WHERE users.id IN (${placeholders}) AND event_members.event_id = ?`,
+  ).bind(...parsed.data.speakerIds, session.eventId).all<{ id: string; name: string; email: string }>();
+  if (!people.results.length) return context.json({ error: "No recipients in this event were selected." }, 400);
   await context.env.DB.batch(people.results.map((person) => context.env.DB.prepare(
     `INSERT INTO communications (id, event_id, related_type, related_id, sender_id, recipient_email, subject, body, status, sent_at)
      VALUES (?, ?, 'speaker_broadcast', ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
