@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { canReadProposal, isOrganizer, requireSession } from "../lib/access";
 import { createId, createToken, hashToken } from "../lib/crypto";
+import { deliverCommunication, getEmailProvider } from "../services/email";
 import { attachCoSpeakers, clearCoSpeakers, coSpeakerInput } from "../services/participants";
 import type { AppEnv } from "../types";
 
@@ -293,19 +294,32 @@ proposals.post("/:proposalId/decision", async (context) => {
         task.acceptedTypes, task.maxFileBytes, proposalId, task.title));
     }
   }
+  let decisionEmail: { id: string; to: string; subject: string; body: string } | null = null;
   if (parsed.data.notify) {
     const subject = parsed.data.disposition === "accepted" ? `Your talk has been accepted to ${session.eventName}` : `An update on your ${session.eventName} proposal`;
     const body = parsed.data.disposition === "accepted"
       ? `Hi ${proposal.speaker_name}, congratulations! Your session '${proposal.title}' has been accepted. Please confirm your participation and complete your speaker profile.`
       : `Hi ${proposal.speaker_name}, thank you for submitting '${proposal.title}'. We are unable to include it in this year's program.`;
+    decisionEmail = { id: createId("com"), to: String(proposal.email), subject, body };
     statements.push(context.env.DB.prepare(
       `INSERT INTO communications
        (id, event_id, related_type, related_id, sender_id, recipient_email, subject, body, status, sent_at)
        VALUES (?, ?, 'decision', ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
-    ).bind(createId("com"), session.eventId, proposalId, session.userId, proposal.email, subject, body));
+    ).bind(decisionEmail.id, session.eventId, proposalId, session.userId, decisionEmail.to, subject, body));
   }
   await context.env.DB.batch(statements);
-  return context.json({ ok: true, message: `${parsed.data.disposition.replace("_", " ")} recorded${parsed.data.notify ? " and notification logged" : ""}.` });
+  // Deliver the decision for real when the event has its own provider connected;
+  // the outbox row above remains the receipt whether or not delivery succeeds.
+  let deliveredNote = "";
+  if (decisionEmail) {
+    const provider = await getEmailProvider(context.env.DB, session.eventId);
+    if (provider) {
+      const outcome = await deliverCommunication(context.env.DB, provider, decisionEmail.id,
+        { to: decisionEmail.to, subject: decisionEmail.subject, body: decisionEmail.body });
+      deliveredNote = outcome === "delivered" ? " and delivered" : " (delivery failed; recorded in the outbox)";
+    }
+  }
+  return context.json({ ok: true, message: `${parsed.data.disposition.replace("_", " ")} recorded${decisionEmail ? ` and notification logged${deliveredNote}` : ""}.` });
 });
 
 proposals.post("/:proposalId/share", async (context) => {

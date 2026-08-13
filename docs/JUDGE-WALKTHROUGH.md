@@ -15,7 +15,7 @@
 | Speaker | `sbek-speaker@example.com` | `SbekTest!2027-spk` |
 | Co-speaker | `sbek-speaker2@example.com` | `SbekTest!2027-spk2` |
 
-The password accounts use the same persisted role and event boundaries as real accounts. Magic links, application email, Accelevents changes, and reminders remain in the local outbox or destination mirror; the deployment does not claim external delivery.
+The password accounts use the same persisted role and event boundaries as real accounts. Magic links, application email, Accelevents changes, and reminders remain in the local outbox or destination mirror by default; the deployment claims no external delivery it has not performed. Email delivery is bring-your-own-key: connect a Resend key in **Settings → Email delivery** and decision notifications and speaker broadcasts deliver for real, with each speaker's published schedule attached as an `.ics` calendar file and the provider message id recorded on the receipt.
 
 ## Three-minute walkthrough
 

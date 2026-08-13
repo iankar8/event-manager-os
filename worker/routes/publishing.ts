@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { isOrganizer, requireSession } from "../lib/access";
 import { createId } from "../lib/crypto";
+import { deliverCommunication, getEmailProvider, maskKey } from "../services/email";
 import type { AppEnv } from "../types";
 
 const publishing = new Hono<AppEnv>();
@@ -142,6 +143,60 @@ publishing.post("/embeds", async (context) => {
     JSON.stringify(parsed.data.config), token).run();
   return context.json({ ok: true, id, snippet: `<iframe src="/events/${session.eventSlug}/${parsed.data.widgetType}?embed=${token}" title="${parsed.data.name}"></iframe>`,
     feedUrl: `/api/public/${session.eventSlug}/feed/${parsed.data.widgetType}?token=${token}` });
+});
+
+publishing.get("/email-provider", async (context) => {
+  const session = await requireSession(context);
+  if (!session || !isOrganizer(session)) return context.json({ error: "Only organizers can view email settings." }, 403);
+  const config = await getEmailProvider(context.env.DB, session.eventId);
+  // The key itself never leaves the server; a masked tail is enough to recognize
+  // which key is connected.
+  return context.json(config
+    ? { configured: true, provider: config.provider, fromAddress: config.from_address, keyPreview: maskKey(config.api_key) }
+    : { configured: false });
+});
+
+publishing.put("/email-provider", async (context) => {
+  const session = await requireSession(context);
+  if (!session || !isOrganizer(session)) return context.json({ error: "Only organizers can change email settings." }, 403);
+  const parsed = z.object({ provider: z.literal("resend"), fromAddress: z.string().email(), apiKey: z.string().min(8) })
+    .safeParse(await context.req.json().catch(() => null));
+  if (!parsed.success) return context.json({ error: "Provide a from address and a Resend API key." }, 400);
+  await context.env.DB.prepare(
+    `INSERT INTO event_email_providers (event_id, provider, from_address, api_key) VALUES (?, 'resend', ?, ?)
+     ON CONFLICT(event_id) DO UPDATE SET provider = 'resend', from_address = excluded.from_address,
+       api_key = excluded.api_key, updated_at = CURRENT_TIMESTAMP`,
+  ).bind(session.eventId, parsed.data.fromAddress, parsed.data.apiKey).run();
+  return context.json({ ok: true, message: "Email delivery connected. New speaker communications will be delivered through your provider." });
+});
+
+publishing.delete("/email-provider", async (context) => {
+  const session = await requireSession(context);
+  if (!session || !isOrganizer(session)) return context.json({ error: "Only organizers can change email settings." }, 403);
+  await context.env.DB.prepare("DELETE FROM event_email_providers WHERE event_id = ?").bind(session.eventId).run();
+  return context.json({ ok: true, message: "Provider disconnected. Communications return to outbox-only." });
+});
+
+publishing.post("/email-provider/test", async (context) => {
+  const session = await requireSession(context);
+  if (!session || !isOrganizer(session)) return context.json({ error: "Only organizers can send a test email." }, 403);
+  const config = await getEmailProvider(context.env.DB, session.eventId);
+  if (!config) return context.json({ error: "Connect a provider before sending a test." }, 409);
+  // The test goes to the signed-in organizer's own address — never to an
+  // arbitrary recipient — and is logged like any other communication.
+  const communicationId = createId("com");
+  await context.env.DB.prepare(
+    `INSERT INTO communications (id, event_id, related_type, sender_id, recipient_email, subject, body, status, sent_at)
+     VALUES (?, ?, 'provider_test', ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
+  ).bind(communicationId, session.eventId, session.userId, session.email,
+    "Event Manager OS delivery test", "This message confirms your email provider is connected and delivering.").run();
+  const outcome = await deliverCommunication(context.env.DB, config, communicationId, {
+    to: session.email, subject: "Event Manager OS delivery test",
+    body: "This message confirms your email provider is connected and delivering.",
+  });
+  return outcome === "delivered"
+    ? context.json({ ok: true, message: `Test delivered to ${session.email}. The receipt records the provider message id.` })
+    : context.json({ error: "The provider rejected the test send. Check the key and verified from address; the failure is recorded in the outbox." }, 502);
 });
 
 publishing.patch("/embeds/:embedId", async (context) => {

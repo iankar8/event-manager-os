@@ -4,6 +4,7 @@ import { strToU8, zipSync } from "fflate";
 
 import { isOrganizer, requireSession } from "../lib/access";
 import { createId, createToken, hashToken } from "../lib/crypto";
+import { deliverCommunication, getEmailProvider, speakerScheduleIcs } from "../services/email";
 import type { AppEnv } from "../types";
 
 const speakers = new Hono<AppEnv>();
@@ -377,12 +378,34 @@ speakers.post("/bulk-email", async (context) => {
      WHERE users.id IN (${placeholders}) AND event_members.event_id = ?`,
   ).bind(...parsed.data.speakerIds, session.eventId).all<{ id: string; name: string; email: string }>();
   if (!people.results.length) return context.json({ error: "No recipients in this event were selected." }, 400);
-  await context.env.DB.batch(people.results.map((person) => context.env.DB.prepare(
+  const messages = people.results.map((person) => ({
+    id: createId("com"),
+    person,
+    subject: parsed.data.subject.replaceAll("{speaker_name}", person.name),
+    body: parsed.data.body.replaceAll("{speaker_name}", person.name),
+  }));
+  await context.env.DB.batch(messages.map((message) => context.env.DB.prepare(
     `INSERT INTO communications (id, event_id, related_type, related_id, sender_id, recipient_email, subject, body, status, sent_at)
      VALUES (?, ?, 'speaker_broadcast', ?, ?, ?, ?, ?, 'sent', CURRENT_TIMESTAMP)`,
-  ).bind(createId("com"), session.eventId, person.id, session.userId, person.email,
-    parsed.data.subject.replaceAll("{speaker_name}", person.name), parsed.data.body.replaceAll("{speaker_name}", person.name))));
-  return context.json({ ok: true, sent: people.results.length, message: `${people.results.length} personalized messages logged.` });
+  ).bind(message.id, session.eventId, message.person.id, session.userId, message.person.email, message.subject, message.body)));
+
+  // With a provider connected, each outbox row is then genuinely delivered,
+  // carrying the speaker's published schedule as a calendar attachment when
+  // they have one. Without a provider, the rows stand as outbox receipts.
+  const provider = await getEmailProvider(context.env.DB, session.eventId);
+  let delivered = 0;
+  if (provider) {
+    for (const message of messages) {
+      const icsContent = await speakerScheduleIcs(context.env.DB, session.eventId, message.person.id);
+      const outcome = await deliverCommunication(context.env.DB, provider, message.id,
+        { to: message.person.email, subject: message.subject, body: message.body, icsContent });
+      if (outcome === "delivered") delivered += 1;
+    }
+  }
+  return context.json({ ok: true, sent: messages.length, delivered,
+    message: provider
+      ? `${messages.length} messages queued; ${delivered} delivered through your provider with calendar attachments where scheduled.`
+      : `${messages.length} personalized messages logged.` });
 });
 
 speakers.patch("/sessions/:sessionId", async (context) => {

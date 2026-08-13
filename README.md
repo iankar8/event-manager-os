@@ -28,7 +28,7 @@ Sign in as a specific persona instead (password login, no inbox required):
 | Reviewer | `sbek-reviewer@example.com` | `SbekTest!2027-rev` |
 | Speaker | `sbek-speaker@example.com` | `SbekTest!2027-spk` |
 
-**What this build does and does not claim.** Application email is written to an outbox and is never delivered externally — no mail provider is wired, and nothing in the UI says otherwise.
+**What this build does and does not claim.** Application email is outbox-first: every message is written as a receipt, and by default nothing leaves the system. An organizer can connect **their own Resend key** in Settings → Email delivery, after which decision notifications and speaker broadcasts are genuinely delivered — with each speaker's published schedule attached as a calendar (`.ics`) file — and each receipt records `delivered` with the provider's message id, or `failed`, truthfully. The application ships with no credentials of its own; the seeded demo has no provider connected.
 
 The Accelevents integration is written against the real REST API (`api.accelevents.com`) — create and update with stable external identities and surfaced failures — but it has **never been verified against a live Accelevents account**, because API access requires their Enterprise or White Label plan. Everything demonstrated here runs in `outbox` mode: each approved apply writes to a deterministic local mirror and records a receipt. `ACCELEVENTS_SYNC_MODE=live` exists and is untested. Their documented write API also has no confirmed speaker-to-session assignment operation, which the flow reports as a reconciliation warning rather than silently claiming success. Every receipt states which mode produced it.
 

@@ -21,12 +21,58 @@ export function SettingsPanel({ onEventChanged }: { onEventChanged: () => Promis
 
   return <div className="settings-workspace">
     {message ? <Notice>{message}</Notice> : null}
-    <nav className="settings-tabs" aria-label="Settings sections">{[["cfp", "Submission form"], ["access", "Access & domains"], ["advisor", "AI advisor"], ["events", "Events"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</nav>
+    <nav className="settings-tabs" aria-label="Settings sections">{[["cfp", "Submission form"], ["access", "Access & domains"], ["advisor", "AI advisor"], ["email", "Email delivery"], ["events", "Events"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</nav>
     {tab === "cfp" ? <CfpSettings data={resource.data} onSaved={saved} /> : null}
+    {tab === "email" ? <EmailDeliverySettings onSaved={saved} /> : null}
     {tab === "access" ? <AccessSettings data={resource.data} onSaved={saved} /> : null}
     {tab === "advisor" ? <AdvisorSettings data={resource.data} onSaved={saved} /> : null}
     {tab === "events" ? <EventSettings events={events.data.events} onSaved={saved} onEventChanged={onEventChanged} /> : null}
   </div>;
+}
+
+type EmailProviderState = { configured: boolean; provider?: string; fromAddress?: string; keyPreview?: string };
+
+/**
+ * Bring-your-own-key email delivery. The application ships with no credentials:
+ * communications stay in the outbox until an organizer connects their own
+ * provider here, and the stored key is never returned — only its masked tail.
+ */
+function EmailDeliverySettings({ onSaved }: { onSaved: (message: string) => void }) {
+  const state = useResource<EmailProviderState>("/api/publishing/email-provider");
+  const [fromAddress, setFromAddress] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function act(fn: () => Promise<{ message: string }>) {
+    setError(null); setPending(true);
+    try { const result = await fn(); onSaved(result.message); setApiKey(""); await state.reload(); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "The request failed."); }
+    finally { setPending(false); }
+  }
+  if (state.loading) return <LoadingBlock label="Loading email settings…" />;
+
+  return <section className="panel-card email-delivery-card">
+    <header><KeyRound size={20} /><div><p className="eyebrow">Email delivery</p><h2>Deliver through your own provider</h2>
+      <p>Without a provider, every message is written to the outbox with a receipt and nothing leaves this system. Connect your own Resend key to have speaker communications genuinely delivered — decision notifications and broadcasts, with each speaker's published schedule attached as a calendar file.</p></div></header>
+    {error ? <Notice tone="warning">{error}</Notice> : null}
+    {state.data?.configured ? <div className="provider-connected">
+      <p><strong>Resend connected.</strong> Sending as {state.data.fromAddress} · key {state.data.keyPreview}</p>
+      <div className="toolbar-actions">
+        <button className="button button-quiet button-small" disabled={pending}
+          onClick={() => act(() => apiRequest("/api/publishing/email-provider/test", { method: "POST", body: "{}" }))}>Send myself a test</button>
+        <button className="button button-quiet button-small" disabled={pending}
+          onClick={() => act(() => apiRequest("/api/publishing/email-provider", { method: "DELETE" }))}>Disconnect</button>
+      </div>
+    </div> : <form className="stack-form" onSubmit={(event) => { event.preventDefault();
+      void act(() => apiRequest("/api/publishing/email-provider", { method: "PUT",
+        body: JSON.stringify({ provider: "resend", fromAddress, apiKey }) })); }}>
+      <label>From address<input type="email" required value={fromAddress} onChange={(event) => setFromAddress(event.target.value)} placeholder="program@yourdomain.com" /></label>
+      <label>Resend API key<input type="password" required minLength={8} value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="re_…" autoComplete="off" /></label>
+      <p className="field-help">The from address must belong to a domain verified in your Resend account. The key is stored for this event only and is never shown again in full.</p>
+      <button className="button button-accent" disabled={pending}>{pending ? "Connecting…" : "Connect Resend"}</button>
+    </form>}
+  </section>;
 }
 
 function CfpSettings({ data, onSaved }: { data: PublishingData; onSaved: (message: string) => void }) {
