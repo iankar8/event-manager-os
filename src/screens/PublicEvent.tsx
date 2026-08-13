@@ -190,9 +190,13 @@ function SpeakersSurface({ data, gallery }: { data: PublicData; gallery: boolean
 function AgendaSurface({ data }: { data: PublicData }) {
   const days = eventDays(String(data.event.starts_on), String(data.event.ends_on)); const [dayIndex, setDayIndex] = useState(0); const [selected, setSelected] = useState<Row | null>(null);
   const day = days[dayIndex]; const sessions = data.sessions.filter((session) => String(session.starts_at).slice(0, 10) === day);
-  const rooms = [...new Set(sessions.map((item) => String(item.room_name)))];
+  // Room columns come from the whole published program, not the selected day: a
+  // day with nothing scheduled still shows the venue's rooms and says so, instead
+  // of collapsing to a bare time gutter that reads as a rendering failure.
+  const rooms = [...new Set(data.sessions.map((item) => String(item.room_name)))];
   return <><PublicHero data={data} eyebrow="Agenda" title="The program, room by room." support="Navigate event days, scan the time grid, and open a session for full published details." />
     <div className="agenda-day-nav"><button disabled={dayIndex === 0} onClick={() => setDayIndex((value) => value - 1)}><ChevronLeft size={17} /> Previous day</button><strong>Day {dayIndex + 1} · {formatDate(day, { weekday: "long", month: "long", day: "numeric" })}</strong><button disabled={dayIndex >= days.length - 1} onClick={() => setDayIndex((value) => value + 1)}>Next day <ChevronRight size={17} /></button></div>
+    {sessions.length === 0 ? <p className="empty-day-note">No published sessions are scheduled on this day yet. Sessions appear here when a schedule revision placing them is published.</p> : null}
     <section className="public-agenda" style={{ gridTemplateColumns: `4rem repeat(${Math.max(rooms.length, 1)}, minmax(13rem, 1fr))` }}><div className="agenda-time-col">{["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM"].map((time) => <span key={time}>{time}</span>)}</div>{rooms.map((room) => <section key={room}><header>{room}</header><div>{sessions.filter((item) => item.room_name === room).map((session) => {
       const start = new Date(String(session.starts_at));
       const localParts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "numeric", hour12: false }).formatToParts(start);
@@ -209,11 +213,23 @@ function ItinerarySurface({ data, slug }: { data: PublicData; slug: string }) {
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(selected)), [selected, storageKey]);
   const sessions = onlyMine ? data.sessions.filter((item) => selected.includes(String(item.id))) : data.sessions;
   function toggle(id: string) { setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]); }
+  // A three-day event browsed as one flat list forces the reader to parse each
+  // card's date label; grouping under explicit day sections keeps the chronology
+  // and gives day-by-day navigation.
+  const days = eventDays(String(data.event.starts_on), String(data.event.ends_on));
+  const byDay = days.map((day) => ({ day, sessions: sessions.filter((session) => String(session.starts_at).slice(0, 10) === day) }));
+  const undated = sessions.filter((session) => !days.includes(String(session.starts_at).slice(0, 10)));
   return <><PublicHero data={data} eyebrow="Schedule itinerary" title="Build your path through DevFlow." support="Sessions stay chronological. Add any talk to a persistent personal schedule and export it to your calendar." />
     <div className="itinerary-controls"><div className="segmented-control"><button aria-pressed={!onlyMine} onClick={() => setOnlyMine(false)}>All sessions</button><button aria-pressed={onlyMine} onClick={() => setOnlyMine(true)}>My schedule ({selected.length})</button></div>
+      <nav className="day-jump" aria-label="Event days">{byDay.map(({ day, sessions: daySessions }, index) => <a key={day} href={`#itinerary-day-${index + 1}`} className={daySessions.length ? "" : "empty-day"}>Day {index + 1}</a>)}</nav>
       <a className="button button-quiet" href={`/api/public/${slug}/feed/itinerary?format=ical&ids=${encodeURIComponent(selected.join(","))}`}><CalendarPlus size={15} /> Export calendar (.ics)</a></div>
-    <section className="itinerary-list">{sessions.map((session) => <article key={session.id}><time>{formatDate(session.starts_at, { weekday: "short", month: "short", day: "numeric" })}<strong>{formatDateTime(session.starts_at).split(", ").at(-1)}–{formatDateTime(session.ends_at).split(", ").at(-1)}</strong></time><div><span className="track-label">{session.track_name}</span><h2>{session.title}</h2><p>{session.description}</p><small>{session.room_name} · {splitJoined(session.speaker_names).map((name, index) => `${name}, ${splitJoined(session.speaker_titles)[index]} at ${splitJoined(session.speaker_companies)[index]}`).join(" · ")}</small></div>
-      <button className={`star-button ${selected.includes(String(session.id)) ? "selected" : ""}`} onClick={() => toggle(String(session.id))}><Star size={17} /> {selected.includes(String(session.id)) ? "Added" : "Add"}</button></article>)}</section></>;
+    {byDay.map(({ day, sessions: daySessions }, index) => <section className="itinerary-day" key={day} id={`itinerary-day-${index + 1}`}>
+      <h2 className="day-heading"><span>Day {index + 1}</span>{formatDate(day, { weekday: "long", month: "long", day: "numeric" })}</h2>
+      {daySessions.length ? <div className="itinerary-list">{daySessions.map((session) => <article key={session.id}><time>{formatDate(session.starts_at, { weekday: "short", month: "short", day: "numeric" })}<strong>{formatDateTime(session.starts_at).split(", ").at(-1)}–{formatDateTime(session.ends_at).split(", ").at(-1)}</strong></time><div><span className="track-label">{session.track_name}</span><span className="format-label">{session.format_name}</span><h2>{session.title}</h2><p>{session.description}</p><small>{session.room_name} · {splitJoined(session.speaker_names).map((name, speakerIndex) => `${name}, ${splitJoined(session.speaker_titles)[speakerIndex]} at ${splitJoined(session.speaker_companies)[speakerIndex]}`).join(" · ")}</small></div>
+        <button className={`star-button ${selected.includes(String(session.id)) ? "selected" : ""}`} onClick={() => toggle(String(session.id))}><Star size={17} /> {selected.includes(String(session.id)) ? "Added" : "Add"}</button></article>)}</div>
+        : <p className="empty-day-note">{onlyMine ? "Nothing from your schedule falls on this day." : "No published sessions are scheduled on this day yet."}</p>}
+    </section>)}
+    {undated.length ? <section className="itinerary-day"><h2 className="day-heading"><span>Unscheduled</span>Sessions without a published time</h2><div className="itinerary-list">{undated.map((session) => <article key={session.id}><div><span className="track-label">{session.track_name}</span><h2>{session.title}</h2></div></article>)}</div></section> : null}</>;
 }
 
 function SessionModal({ session, onClose }: { session: Row; onClose: () => void }) {
