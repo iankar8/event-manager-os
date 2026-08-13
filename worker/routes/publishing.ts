@@ -144,4 +144,25 @@ publishing.post("/embeds", async (context) => {
     feedUrl: `/api/public/${session.eventSlug}/feed/${parsed.data.widgetType}?token=${token}` });
 });
 
+publishing.patch("/embeds/:embedId", async (context) => {
+  const session = await requireSession(context);
+  if (!session || !isOrganizer(session)) return context.json({ error: "Only organizers can manage embeds." }, 403);
+  const parsed = z.object({ enabled: z.boolean() }).safeParse(await context.req.json().catch(() => null));
+  if (!parsed.success) return context.json({ error: "Send an enabled state." }, 400);
+  const result = await context.env.DB.prepare(
+    "UPDATE public_embeds SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND event_id = ?",
+  ).bind(parsed.data.enabled ? 1 : 0, context.req.param("embedId"), session.eventId).run();
+  return result.meta.changes
+    ? context.json({ ok: true, message: parsed.data.enabled ? "Embed enabled." : "Embed disabled; its token stops resolving." })
+    : context.json({ error: "Embed not found." }, 404);
+});
+
+publishing.delete("/embeds/:embedId", async (context) => {
+  const session = await requireSession(context);
+  if (!session || !isOrganizer(session)) return context.json({ error: "Only organizers can manage embeds." }, 403);
+  const result = await context.env.DB.prepare("DELETE FROM public_embeds WHERE id = ? AND event_id = ?")
+    .bind(context.req.param("embedId"), session.eventId).run();
+  return result.meta.changes ? context.json({ ok: true, message: "Embed deleted." }) : context.json({ error: "Embed not found." }, 404);
+});
+
 export { publishing };

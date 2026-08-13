@@ -22,7 +22,10 @@ export function PublicEvent() {
   // A saved embed can be scoped to one track. Apply it once here so every surface
   // renders the same slice, and narrow the speaker directory to the people still
   // appearing — a filtered agenda beside an unfiltered speaker list is its own lie.
-  const embedTrack = String(resource.data.embedConfig?.track ?? "").trim();
+  // Config stores the track name; embeds saved before that convention may carry
+  // the id, so resolve either to a name before filtering.
+  const rawEmbedTrack = String(resource.data.embedConfig?.track ?? "").trim();
+  const embedTrack = String(resource.data.tracks.find((track) => String(track.id) === rawEmbedTrack)?.name ?? rawEmbedTrack);
   const data = embedTrack && embedTrack !== "all"
     ? (() => {
         const sessions = resource.data.sessions.filter((session) => session.track_name === embedTrack);

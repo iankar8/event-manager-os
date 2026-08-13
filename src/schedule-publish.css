@@ -68,3 +68,5 @@
   .public-site-card .site-status { min-width: 0; }
   .agenda-empty { inset-inline: 1rem; }
 }
+
+.format-select { display: grid; gap: var(--space-2xs); margin-top: var(--space-xs); font-size: var(--text-xs); font-weight: 600; }
