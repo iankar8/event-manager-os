@@ -2,7 +2,7 @@
 
 **Prepared:** August 12, 2026  
 **Repository:** `/Users/iankar/Documents/Codex/2026-08-09/hope-you-are-all-having-fun`  
-**GitHub:** https://github.com/iankar8/program-desk  
+**GitHub:** https://github.com/iankar8/event-manager-os  
 **Live evaluator build:** https://program-desk.ian-208.workers.dev  
 **Branch / commit at handoff:** `main` at `cb2e5d0e22af25d542de963f27d1e98b5b74c26a`  
 **Competition submission status:** Unknown and owner-controlled. Do not claim it has been submitted.

@@ -406,6 +406,23 @@ try {
   await page.getByRole("button", { name: /Priya Raman.*Latticework Systems/ }).waitFor();
   assert.equal(await page.getByRole("button", { name: /Marcus Okafor/ }).count(), 0, "Confirmed-status filter should hide non-matching speakers");
 
+  // A broadcast must be composed and previewed, never fired on click with
+  // hard-coded copy the organizer never saw.
+  const outboxBefore = await page.evaluate(async () => (await (await fetch("/api/publishing")).json()).communications.length);
+  await page.getByRole("button", { name: "Email filtered", exact: true }).click();
+  await page.getByRole("heading", { name: /recipient/ }).waitFor();
+  assert.equal(await page.evaluate(async () => (await (await fetch("/api/publishing")).json()).communications.length), outboxBefore,
+    "Opening the compose step must not queue anything on its own");
+  await page.getByLabel("Subject").fill("Your {speaker_name} session logistics");
+  await page.getByLabel("Message").fill("Hi {speaker_name}, here is what we need before the event.");
+  await page.getByText("Your Priya Raman session logistics", { exact: true }).waitFor();
+  await page.getByRole("button", { name: /^Queue \d+ message/ }).click();
+  const broadcast = await page.evaluate(async () => (await (await fetch("/api/publishing")).json()).communications
+    .filter((item) => item.related_type === "speaker_broadcast"));
+  assert.equal(broadcast.length > 0, true, "Queued broadcast must reach the outbox");
+  assert.equal(broadcast.every((item) => !String(item.subject).includes("{speaker_name}")), true,
+    "Merge fields must be rendered per recipient, not queued literally");
+
   const publicPage = await context.newPage();
   captureErrors(publicPage);
   await publicPage.goto(`${baseURL}/events/devflow-conf-2027/cfp`);

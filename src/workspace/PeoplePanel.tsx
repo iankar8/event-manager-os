@@ -15,6 +15,7 @@ export function PeoplePanel({ role, mode = "people" }: { role: "organizer" | "sp
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showSpeakerForm, setShowSpeakerForm] = useState(false);
+  const [showCompose, setShowCompose] = useState(false);
   const [taskStatus, setTaskStatus] = useState("all");
 
   const visibleSpeakers = useMemo(() => (resource.data?.speakers ?? []).filter((speaker) =>
@@ -72,9 +73,13 @@ export function PeoplePanel({ role, mode = "people" }: { role: "organizer" | "sp
     <section className="panel-card">
       <header className="section-toolbar"><div><p className="eyebrow">Speaker management</p><h2>{visibleSpeakers.length} speakers</h2></div><div className="toolbar-actions">
         <label className="button button-quiet button-small"><Upload size={14} /> Import CSV<input className="visually-hidden" type="file" accept=".csv,text/csv" onChange={importCsv} /></label>
-        <button className="button button-quiet button-small" onClick={() => activeSpeaker && run("/api/speakers/bulk-email", { speakerIds: visibleSpeakers.map((speaker) => speaker.id), subject: "Welcome to {speaker_name} and DevFlow Conf", body: "Hi {speaker_name}, welcome to the speaker program." })}><Mail size={14} /> Email filtered</button>
+        <button className="button button-quiet button-small" disabled={!visibleSpeakers.length}
+          onClick={() => setShowCompose((value) => !value)}><Mail size={14} /> Email filtered</button>
         <button className="button button-quiet button-small" onClick={() => setShowSpeakerForm((value) => !value)}><UserPlus size={14} /> Add speaker</button>
         <button className="button button-accent button-small" onClick={() => setShowTaskForm((value) => !value)}><UserPlus size={14} /> Assign task</button></div></header>
+      {showCompose ? <BulkEmailCompose recipients={visibleSpeakers}
+        onSent={async (text) => { setMessage(text); setShowCompose(false); await resource.reload(); }}
+        onCancel={() => setShowCompose(false)} /> : null}
       {showSpeakerForm ? <SpeakerCreateForm onAdded={async (text) => { setMessage(text); setShowSpeakerForm(false); await resource.reload(); }} /> : null}
       {showTaskForm ? <TaskForm speakerIds={visibleSpeakers.map((speaker) => String(speaker.id))} sessions={resource.data.sessions} onAdded={async (text) => { setMessage(text); setShowTaskForm(false); await resource.reload(); }} /> : null}
       <div className="filter-bar"><label className="search-control"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search speaker or company" /></label>
@@ -147,6 +152,81 @@ function SpeakerProfile({ speaker, sessions, organizer = false, onSaved, message
         <label>Organizer note<textarea rows={3} value={organizerNote} onChange={(event) => setOrganizerNote(event.target.value)} /></label></> : null}
       <button className="button button-accent">Save profile</button></form> : <div className="profile-body"><div><h3>Biography</h3><p>{speaker.bio}</p><dl className="record-facts"><div><dt>Social</dt><dd>{speaker.twitter || "Not added"}</dd></div><div><dt>LinkedIn</dt><dd>{speaker.linkedin_url || "Not added"}</dd></div><div><dt>Travel</dt><dd>{speaker.travel_preferences || "Not added"}</dd></div><div><dt>Dietary</dt><dd>{speaker.dietary_preferences || "Not added"}</dd></div></dl></div>
       <div>{organizer ? <><h3>Organizer controls</h3><div className="connection-card"><strong>Workflow status</strong><StatusChip value={speaker.workflow_status} />{speaker.organizer_note ? <small>{speaker.organizer_note}</small> : null}</div></> : null}<h3>Connected sessions</h3>{sessions.length ? sessions.map((item) => <article className="connection-card" key={item.id}><strong>{item.title}</strong><small>{item.track_name} · {item.format_name}</small><StatusChip value={item.content_status} /></article>) : <p className="muted-copy">No sessions assigned yet.</p>}</div></div>}
+  </section>;
+}
+
+/**
+ * Compose step for a speaker broadcast.
+ *
+ * This used to fire on click with a hard-coded subject and body, which is the one
+ * thing the rest of the product refuses to do: every other outgoing path previews
+ * exactly what will be written before an organizer commits to it. Recipients,
+ * merge-field rendering, and the editable templates are all visible here first.
+ */
+function BulkEmailCompose({ recipients, onSent, onCancel }: {
+  recipients: Row[]; onSent: (message: string) => void; onCancel: () => void;
+}) {
+  const templates = useResource<{ templates: Row[] }>("/api/publishing");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function applyTemplate(templateId: string) {
+    const template = templates.data?.templates.find((item) => String(item.id) === templateId);
+    if (!template) return;
+    setSubject(String(template.subject ?? ""));
+    setBody(String(template.body ?? ""));
+  }
+
+  // Rendered against the first recipient so the organizer reads a real message,
+  // not a merge-field skeleton.
+  const sample = recipients[0];
+  const render = (text: string) => text.replaceAll("{speaker_name}", String(sample?.name ?? "speaker"));
+
+  async function send() {
+    setError(null); setPending(true);
+    try {
+      const result = await apiRequest<{ message: string }>("/api/speakers/bulk-email", {
+        method: "POST",
+        body: JSON.stringify({ speakerIds: recipients.map((speaker) => String(speaker.id)), subject, body }),
+      });
+      onSent(result.message);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The messages could not be queued.");
+    } finally { setPending(false); }
+  }
+
+  return <section className="compose-panel">
+    <header><div><p className="eyebrow">Compose broadcast</p><h3>{recipients.length} recipient{recipients.length === 1 ? "" : "s"}</h3></div>
+      <button type="button" className="button button-quiet button-small" onClick={onCancel}>Cancel</button></header>
+
+    <details className="recipient-disclosure"><summary>Review recipients</summary>
+      <ul className="recipient-list">{recipients.map((speaker) => <li key={String(speaker.id)}>
+        <strong>{String(speaker.name)}</strong> <span>{String(speaker.email ?? "no address on file")}</span></li>)}</ul>
+    </details>
+
+    <label>Start from a template
+      <select defaultValue="" onChange={(event) => applyTemplate(event.target.value)}>
+        <option value="">Write from scratch…</option>
+        {(templates.data?.templates ?? []).map((template) => <option key={String(template.id)} value={String(template.id)}>{String(template.name)}</option>)}
+      </select>
+    </label>
+    <label>Subject<input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Use {speaker_name} to personalize" /></label>
+    <label>Message<textarea rows={6} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Use {speaker_name} to personalize" /></label>
+
+    {subject.trim() && body.trim() ? <div className="compose-preview">
+      <p className="eyebrow">Preview for {String(sample?.name ?? "the first recipient")}</p>
+      <p className="preview-subject">{render(subject)}</p>
+      <p className="preview-body">{render(body)}</p>
+    </div> : null}
+
+    {error ? <Notice tone="warning">{error}</Notice> : null}
+    <footer>
+      <span>Messages are written to the outbox with a receipt for each recipient. This deployment does not deliver mail externally.</span>
+      <button type="button" className="button button-accent button-small" disabled={pending || !subject.trim() || !body.trim()} onClick={send}>
+        {pending ? "Queueing…" : `Queue ${recipients.length} message${recipients.length === 1 ? "" : "s"}`}</button>
+    </footer>
   </section>;
 }
 

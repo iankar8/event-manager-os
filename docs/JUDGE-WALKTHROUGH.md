@@ -2,7 +2,7 @@
 
 **Live application:** https://program-desk.ian-208.workers.dev
 
-**Source:** https://github.com/iankar8/program-desk
+**Source:** https://github.com/iankar8/event-manager-os
 
 **Fastest entry:** choose **Explore demo**. Each visit creates an isolated persisted event and opens as Organizer.
 
