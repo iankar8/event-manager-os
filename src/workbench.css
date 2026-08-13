@@ -222,3 +222,11 @@ button.table-row { cursor: pointer; }
 .preview-body { color: var(--color-muted); font-size: var(--text-sm); white-space: pre-wrap; }
 .compose-panel > footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--color-rule); color: var(--color-muted); font-size: var(--text-xs); }
 @media (max-width: 48rem) { .compose-panel > footer { flex-direction: column; align-items: flex-start; } }
+
+/* Speaker profile photos, listed alongside the deliverable file library. */
+.profile-photo-library { display: grid; gap: var(--space-sm); margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--color-rule); }
+.profile-photo-library ul { display: grid; gap: var(--space-xs); padding-left: 0; list-style: none; }
+.profile-photo-library li { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-sm); background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-sm); }
+.profile-photo-library img { width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: 50%; flex: none; }
+.profile-photo-library li > span { display: grid; gap: 0.1rem; flex: 1; min-width: 0; }
+.profile-photo-library small { color: var(--color-muted); font-size: var(--text-xs); overflow-wrap: anywhere; }

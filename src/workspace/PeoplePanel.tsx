@@ -64,7 +64,8 @@ export function PeoplePanel({ role, mode = "people" }: { role: "organizer" | "sp
           {role === "speaker" && task.task_type !== "file_request" && task.status !== "complete" ? <button className="button button-quiet button-small" onClick={() => run(`/api/speakers/tasks/${task.id}/complete`)}>Mark complete</button> : null}</div></article>)}</div>
     </section>
     <section className="panel-card"><header className="section-toolbar"><div><p className="eyebrow">File library</p><h2>All versions stay attached to their task</h2></div><FileArchive size={18} /></header>
-      {resource.data.files.length ? <div className="file-list">{resource.data.files.map((file) => <FileRecord key={String(file.id)} file={file} comments={(resource.data?.comments ?? []).filter((comment) => comment.file_id === file.id)} onAdded={async (text) => { setMessage(text); await resource.reload(); }} />)}</div> : <EmptyBlock title="No uploaded files yet">The first speaker upload will appear here with version metadata.</EmptyBlock>}
+      {resource.data.files.length ? <div className="file-list">{resource.data.files.map((file) => <FileRecord key={String(file.id)} file={file} comments={(resource.data?.comments ?? []).filter((comment) => comment.file_id === file.id)} onAdded={async (text) => { setMessage(text); await resource.reload(); }} />)}</div> : <EmptyBlock title="No task deliverables yet">Files uploaded against a deliverable request appear here with version metadata. Profile photos are held on the speaker record and are listed below.</EmptyBlock>}
+      <ProfilePhotoLibrary speakers={resource.data.speakers} />
     </section>
   </div>;
 
@@ -153,6 +154,34 @@ function SpeakerProfile({ speaker, sessions, organizer = false, onSaved, message
       <button className="button button-accent">Save profile</button></form> : <div className="profile-body"><div><h3>Biography</h3><p>{speaker.bio}</p><dl className="record-facts"><div><dt>Social</dt><dd>{speaker.twitter || "Not added"}</dd></div><div><dt>LinkedIn</dt><dd>{speaker.linkedin_url || "Not added"}</dd></div><div><dt>Travel</dt><dd>{speaker.travel_preferences || "Not added"}</dd></div><div><dt>Dietary</dt><dd>{speaker.dietary_preferences || "Not added"}</dd></div></dl></div>
       <div>{organizer ? <><h3>Organizer controls</h3><div className="connection-card"><strong>Workflow status</strong><StatusChip value={speaker.workflow_status} />{speaker.organizer_note ? <small>{speaker.organizer_note}</small> : null}</div></> : null}<h3>Connected sessions</h3>{sessions.length ? sessions.map((item) => <article className="connection-card" key={item.id}><strong>{item.title}</strong><small>{item.track_name} · {item.format_name}</small><StatusChip value={item.content_status} /></article>) : <p className="muted-copy">No sessions assigned yet.</p>}</div></div>}
   </section>;
+}
+
+/**
+ * Speaker profile photos, listed where an organizer looks for speaker uploads.
+ *
+ * A headshot is not a task deliverable — it lives on the speaker record rather than
+ * in deliverable_files — so it never appeared in the file library and had no
+ * download control anywhere. It is listed separately rather than folded in, because
+ * calling it a deliverable would misrepresent what it is. No upload timestamp is
+ * shown: the record does not store one, and users.updated_at moves on any profile
+ * edit, so presenting it as an upload time would be inventing evidence.
+ */
+function ProfilePhotoLibrary({ speakers }: { speakers: Row[] }) {
+  const withPhotos = speakers.filter((speaker) => String(speaker.headshot_url ?? "").startsWith("data:image/"));
+  if (!withPhotos.length) return null;
+  const extensionOf = (url: string) => (url.match(/^data:image\/(png|jpeg|webp)/)?.[1] ?? "png").replace("jpeg", "jpg");
+  return <div className="profile-photo-library">
+    <p className="eyebrow">Speaker profile photos · {withPhotos.length}</p>
+    <ul>{withPhotos.map((speaker) => {
+      const url = String(speaker.headshot_url);
+      const fileName = `${String(speaker.name).toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}-profile.${extensionOf(url)}`;
+      return <li key={String(speaker.id)}>
+        <img src={url} alt={`${String(speaker.name)} profile`} />
+        <span><strong>{String(speaker.name)}</strong><small>{fileName}</small></span>
+        <a className="button button-quiet button-small" href={url} download={fileName}>Download</a>
+      </li>;
+    })}</ul>
+  </div>;
 }
 
 /**
