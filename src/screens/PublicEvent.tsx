@@ -1,32 +1,46 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarPlus, ChevronLeft, ChevronRight, Clock3, ExternalLink, MapPin, Search, Star, UserRound } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { apiRequest } from "../lib/api";
 import { useResource } from "../lib/useResource";
 import { ErrorBlock, formatDate, formatDateTime, LoadingBlock, Notice, Row, StatusChip } from "../workspace/shared";
 
-type PublicData = { event: Row; form: Row | null; fields: Row[]; tracks: Row[]; formats: Row[]; sessions: Row[]; speakers: Row[] };
+type PublicData = { event: Row; form: Row | null; fields: Row[]; tracks: Row[]; formats: Row[]; sessions: Row[]; speakers: Row[]; embedConfig?: Record<string, unknown> | null };
 const publicNav = [["sessions", "Sessions"], ["speakers", "Speakers"], ["agenda", "Agenda"], ["itinerary", "Itinerary"], ["gallery", "Speaker gallery"], ["cfp", "Submit a talk"]] as const;
 
 export function PublicEvent() {
   const { slug = "devflow-conf-2027", surface = "agenda" } = useParams();
   const navigate = useNavigate();
-  const resource = useResource<PublicData>(`/api/public/${slug}`);
+  const location = useLocation();
+  const embedToken = new URLSearchParams(location.search).get("embed");
+  const resource = useResource<PublicData>(`/api/public/${slug}${embedToken ? `?embed=${encodeURIComponent(embedToken)}` : ""}`);
   if (resource.loading) return <LoadingBlock label="Loading the public program…" />;
   if (resource.error) return <ErrorBlock message={resource.error} />;
   if (!resource.data) return null;
+
+  // A saved embed can be scoped to one track. Apply it once here so every surface
+  // renders the same slice, and narrow the speaker directory to the people still
+  // appearing — a filtered agenda beside an unfiltered speaker list is its own lie.
+  const embedTrack = String(resource.data.embedConfig?.track ?? "").trim();
+  const data = embedTrack && embedTrack !== "all"
+    ? (() => {
+        const sessions = resource.data.sessions.filter((session) => session.track_name === embedTrack);
+        const speakerIds = new Set(sessions.flatMap((session) => String(session.speaker_ids ?? "").split("||")).filter(Boolean));
+        return { ...resource.data, sessions, speakers: resource.data.speakers.filter((speaker) => speakerIds.has(String(speaker.id))) };
+      })()
+    : resource.data;
   return <div className="public-shell">
     <header className="public-header"><div className="public-brand"><Link className="wordmark" to="/">Event Manager OS</Link><span /><Link to={`/events/${slug}/agenda`}><strong>{resource.data.event.name}</strong><small>{formatDate(resource.data.event.starts_on)}–{formatDate(resource.data.event.ends_on)} · {resource.data.event.location}</small></Link></div>
       <Link className="button button-quiet button-small" to="/login">Organizer / participant sign in</Link></header>
     <nav className="public-nav" aria-label="Public event pages">{publicNav.map(([id, label]) => <button key={id} aria-current={surface === id ? "page" : undefined} onClick={() => navigate(`/events/${slug}/${id}`)}>{label}</button>)}</nav>
     <main className="public-main">
-      {surface === "cfp" ? <PublicCfp data={resource.data} slug={slug} /> : null}
-      {surface === "sessions" ? <SessionsSurface data={resource.data} /> : null}
-      {surface === "speakers" ? <SpeakersSurface data={resource.data} gallery={false} /> : null}
-      {surface === "gallery" || surface === "speaker_gallery" ? <SpeakersSurface data={resource.data} gallery /> : null}
-      {surface === "agenda" ? <AgendaSurface data={resource.data} /> : null}
-      {surface === "itinerary" ? <ItinerarySurface data={resource.data} slug={slug} /> : null}
+      {surface === "cfp" ? <PublicCfp data={data} slug={slug} /> : null}
+      {surface === "sessions" ? <SessionsSurface data={data} /> : null}
+      {surface === "speakers" ? <SpeakersSurface data={data} gallery={false} /> : null}
+      {surface === "gallery" || surface === "speaker_gallery" ? <SpeakersSurface data={data} gallery /> : null}
+      {surface === "agenda" ? <AgendaSurface data={data} /> : null}
+      {surface === "itinerary" ? <ItinerarySurface data={data} slug={slug} /> : null}
     </main>
     <footer className="public-footer"><span>Published from one approved Event Manager OS record.</span><Link to="/">Powered by Event Manager OS <ExternalLink size={12} /></Link></footer>
   </div>;

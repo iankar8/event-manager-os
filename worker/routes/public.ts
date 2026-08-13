@@ -56,8 +56,24 @@ publicRoutes.get("/:slug", async (context) => {
     if (field.field_key === "format") return { ...field, options_json: JSON.stringify(formats.results.map((format) => (format as { name: string }).name)) };
     return field;
   });
+  // An embed token carries the configuration saved when the snippet was generated.
+  // Without returning it, a track filter chosen in Publish & distribute was stored
+  // and then ignored by every rendered surface — the interface promising a filter
+  // the embed never applied.
+  const embedToken = context.req.query("embed");
+  let embedConfig: Record<string, unknown> | null = null;
+  if (embedToken) {
+    const embed = await context.env.DB.prepare(
+      "SELECT config_json FROM public_embeds WHERE event_id = ? AND public_token = ? AND enabled = 1",
+    ).bind(event.id, embedToken).first<{ config_json: string }>();
+    if (embed) {
+      try { embedConfig = JSON.parse(embed.config_json) as Record<string, unknown>; }
+      catch { embedConfig = null; }
+    }
+  }
+
   return context.json({ event, form, fields: enhancedFields, tracks: tracks.results, formats: formats.results,
-    sessions: sessions.results, speakers: speakers.results });
+    sessions: sessions.results, speakers: speakers.results, embedConfig });
 });
 
 publicRoutes.post("/:slug/signup", async (context) => {
